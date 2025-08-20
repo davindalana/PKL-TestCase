@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use('/api/wo', woRoutes);
 
-// Jalankan koneksi MongoDB terlebih dahulu
+// Cukup jalankan koneksi ke MongoDB, tanpa service sinkronisasi
 connectToMongo().then(() => {
   app.listen(PORT, async () => {
     console.log(`🚀 Server berjalan di http://localhost:${PORT}`);

@@ -1,0 +1,26 @@
+{
+  "name": "pkl-testcase",
+  "version": "1.0.0",
+  "description": "Membuat sinkronisasi 2 database dalam web",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/davindalana/PKL-TestCase.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/davindalana/PKL-TestCase/issues"
+  },
+  "homepage": "https://github.com/davindalana/PKL-TestCase#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "mysql2": "^3.14.3",
+    "pg": "^8.16.3"
+  }
+}
