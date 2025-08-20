@@ -84,24 +84,24 @@
   .layout {
     flex-direction: column;
   }
-  
+
   .sidebar {
     width: 100%;
     height: auto;
   }
-  
+
   .sidebar-nav {
     display: flex;
     overflow-x: auto;
     padding: 0.5rem;
   }
-  
+
   .nav-item {
     flex-shrink: 0;
     min-width: 120px;
     padding: 0.75rem;
   }
-  
+
   .main-content {
     padding: 1rem;
   }

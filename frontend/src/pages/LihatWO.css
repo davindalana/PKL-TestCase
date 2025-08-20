@@ -1,3 +1,121 @@
+.wo-table tbody tr {
+  background: #fff;
+  transition: background 0.2s;
+}
+.wo-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+.wo-table tbody tr:hover {
+  background: #e9f0fb;
+}
+.wo-table td,
+.wo-table th {
+  vertical-align: middle;
+}
+/* --- Custom Table & Action Button Styling for LihatWO --- */
+.aksi-cell {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  padding: 0.5rem 0.25rem;
+}
+
+.aksi-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-right: 0.2rem;
+  margin-bottom: 0.1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.aksi-btn:last-child {
+  margin-right: 0;
+}
+
+.aksi-btn.btn-secondary {
+  background: #667eea;
+  color: #fff;
+}
+.aksi-btn.btn-secondary:hover {
+  background: #5a67d8;
+}
+.aksi-btn.btn-info {
+  background: #4299e1;
+  color: #fff;
+}
+.aksi-btn.btn-info:hover {
+  background: #3182ce;
+}
+.aksi-btn.btn-danger {
+  background: #e53e3e;
+  color: #fff;
+}
+.aksi-btn.btn-danger:hover {
+  background: #c53030;
+}
+
+.data-cell {
+  font-size: 1.05rem;
+  color: #2d3748;
+  padding: 0.7rem 1.2rem;
+  vertical-align: middle;
+  cursor: pointer;
+  border-right: 1.5px solid #e2e8f0;
+  background: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.wo-table td:last-child,
+.wo-table th:last-child {
+  border-right: none;
+}
+
+.wo-table th {
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  padding: 0.8rem 1.2rem;
+  border-right: 1.5px solid #e2e8f0;
+  background: #667eea;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+/* Make sure table header is readable */
+.wo-table th {
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive tweaks for action cell */
+@media (max-width: 768px) {
+  .data-cell {
+    font-size: 1.05rem;
+    color: #2d3748;
+    padding: 0.7rem 1.2rem;
+    vertical-align: middle;
+    cursor: pointer;
+    border-right: 1.5px solid #e2e8f0;
+    background: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 600px;
+  }
+}
 .lihat-wo-container {
   max-width: 1400px;
   margin: 0 auto;
@@ -36,8 +154,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .table-controls {
@@ -93,10 +215,12 @@
 .table-container {
   background: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 .wo-table {
@@ -132,13 +256,13 @@
 }
 
 .id-cell {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-weight: 600;
   color: #4299e1;
 }
 
 .incident-cell {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-weight: 600;
   color: #e53e3e;
   background-color: #fed7d7;
@@ -147,7 +271,7 @@
 }
 
 .ttr-cell {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-weight: 600;
   color: #2f855a;
   text-align: center;
@@ -179,7 +303,7 @@
 }
 
 .service-cell {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   color: #4299e1;
   font-size: 0.75rem;
 }
@@ -191,7 +315,7 @@
 }
 
 .onu-cell {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   color: #e53e3e;
   font-weight: 600;
   text-align: center;
@@ -286,7 +410,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -415,7 +540,11 @@
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -426,21 +555,68 @@
   }
 }
 
+/* Format Modal */
+.format-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.format-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  position: relative;
+  text-align: left;
+}
+
+.format-modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #2d3748;
+}
+
+.format-modal-content pre {
+  background: #f7fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 1em;
+  color: #2d3748;
+  margin-bottom: 1.5rem;
+  white-space: pre-wrap;
+}
+
+.format-modal-content .btn {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 1024px) {
   .wo-table {
     min-width: 1200px;
     font-size: 0.7rem;
   }
-  
+
   .wo-table th,
   .wo-table td {
     padding: 0.4rem 0.25rem;
   }
-  
+
   .summary-cell {
     max-width: 200px;
   }
-  
+
   .service-cell {
     font-size: 0.65rem;
   }
@@ -450,38 +626,38 @@
   .lihat-wo-container {
     padding: 0 1rem;
   }
-  
+
   .table-controls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .search-section {
     min-width: auto;
   }
-  
+
   .action-section {
     justify-content: space-between;
   }
-  
+
   .table-container {
     overflow-x: auto;
   }
-  
+
   .wo-table {
     min-width: 900px;
     font-size: 0.65rem;
   }
-  
+
   .summary-cell {
     max-width: 150px;
   }
-  
+
   .db-info {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .sync-arrow {
     transform: rotate(90deg);
   }
