@@ -1,0 +1,214 @@
+.input-wo-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.page-header h1 {
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.page-header p {
+  color: #718096;
+  font-size: 1.1rem;
+}
+
+.input-form-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+}
+
+.input-form {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1rem;
+}
+
+.textarea-container {
+  position: relative;
+}
+
+.excel-textarea {
+  width: 100%;
+  min-height: 300px;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+  background-color: #f7fafc;
+}
+
+.excel-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background-color: white;
+}
+
+.excel-textarea::placeholder {
+  color: #a0aec0;
+  font-style: italic;
+}
+
+.textarea-info {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background-color: #4299e1;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #3182ce;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid #e2e8f0;
+  color: #4a5568;
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: #cbd5e0;
+  background-color: #f7fafc;
+}
+
+.message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.message.success {
+  background-color: #f0fff4;
+  color: #2f855a;
+  border: 1px solid #9ae6b4;
+}
+
+.message.error {
+  background-color: #fed7d7;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+
+.message.info {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+  border: 1px solid #90cdf4;
+}
+
+.info-panel {
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #667eea;
+}
+
+.info-panel h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #2d3748;
+  font-size: 1.125rem;
+}
+
+.info-panel ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.info-panel li {
+  margin-bottom: 0.5rem;
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .input-wo-container {
+    padding: 0 1rem;
+  }
+  
+  .input-form-card {
+    padding: 1.5rem;
+  }
+  
+  .button-group {
+    justify-content: center;
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .excel-textarea {
+    min-height: 250px;
+    font-size: 0.8rem;
+  }
+}
