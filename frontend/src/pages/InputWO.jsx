@@ -5,6 +5,7 @@ const InputWO = () => {
   const [excelData, setExcelData] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [jsonPreview, setJsonPreview] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -14,8 +15,9 @@ const InputWO = () => {
       return;
     }
 
-    setIsLoading(true);
-    setMessage("");
+
+  setIsLoading(true);
+  setMessage("");
 
     try {
       // Kirim ke backend MySQL
@@ -150,11 +152,14 @@ const InputWO = () => {
         });
       };
 
+
       const parsedData = parseTSV(excelData);
+      setJsonPreview(parsedData);
       if (!parsedData.length)
         throw new Error("Format data tidak valid atau kosong!");
 
-      const response = await fetch("http://localhost:3001/api/wo", {
+      // Ganti endpoint ke backend BMYSQLaPOSTG
+      const response = await fetch("http://localhost:3000/api/mypost", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +169,8 @@ const InputWO = () => {
 
       if (response.ok) {
         setMessage("✅ Data berhasil disimpan ke database!");
-        setExcelData("");
+  setExcelData("");
+  setJsonPreview([]);
       } else {
         // Coba ambil pesan error dari backend
         let errMsg = "Gagal menyimpan data";
@@ -182,8 +188,9 @@ const InputWO = () => {
   };
 
   const handleClear = () => {
-    setExcelData("");
-    setMessage("");
+  setExcelData("");
+  setMessage("");
+  setJsonPreview([]);
   };
 
   const sampleData = `Aksi\tINCIDENT\tTTR CUSTOMER\tSUMMARY\tREPORTED DATE\tOWNER GROUP\tOWNER\tCUSTOMER SEGMENT\tSERVICE TYPE\tWITEL\tWORKZONE\tSTATUS\tSTATUS DATE\tTICKET ID GAMAS\tREPORTED BY\tCONTACT PHONE\tCONTACT NAME\tCONTACT EMAIL\tBOOKING DATE\tDESCRIPTION ASSIGMENT\tREPORTED PRIORITY\tSOURCE TICKET\tSUBSIDIARY\tEXTERNAL TICKET ID\tCHANNEL\tCUSTOMER TYPE\tCLOSED BY\tCLOSED / REOPEN by\tCUSTOMER ID\tCUSTOMER NAME\tSERVICE ID\tSERVICE NO\tSLG\tTECHNOLOGY\tLAPUL\tGAUL\tONU RX\tPENDING REASON\tDATEMODIFIED\tINCIDENT DOMAIN\tREGION\tSYMPTOM\tHIERARCHY PATH\tSOLUTION\tDESCRIPTION ACTUAL SOLUTION\tKODE PRODUK\tPERANGKAT\tTECHNICIAN\tDEVICE NAME\tWORKLOG SUMMARY\tLAST UPDATE WORKLOG\tCLASSIFICATION FLAG\tREALM\tRELATED TO GAMAS\tTSC RESULT\tSCC RESULT\tTTR AGENT\tTTR MITRA\tTTR NASIONAL\tTTR PENDING\tTTR REGION\tTTR WITEL\tTTR END TO END\tNOTE\tGUARANTE STATUS\tRESOLVE DATE\tSN ONT\tTIPE ONT\tMANUFACTURE ONT\tIMPACTED SITE\tCAUSE\tRESOLUTION\tNOTES ESKALASI\tRK INFORMATION\tEXTERNAL TICKET TIER 3\tCUSTOMER CATEGORY\tCLASSIFICATION PATH\tTERITORY NEAR END\tTERITORY FAR END\tURGENCY\tURGENCY DESCRIPTION
@@ -272,6 +279,15 @@ Format Hapus	INC38587292	01:56:01	WAJIB DIISI MSISDN CONTACT	2025-08-12 17:42:15
         )}
       </div>
 
+      {/* Preview JSON hasil parsing TSV */}
+      {jsonPreview && jsonPreview.length > 0 && (
+        <div className="json-preview-panel">
+          <h3>Preview JSON (otomatis dari data TSV):</h3>
+          <pre style={{ maxHeight: 300, overflow: 'auto', background: '#f6f8fa', fontSize: 13, border: '1px solid #eee', padding: 10 }}>
+            {JSON.stringify(jsonPreview, null, 2)}
+          </pre>
+        </div>
+      )}
       <div className="info-panel">
         <h3>ℹ️ Informasi</h3>
         <ul>

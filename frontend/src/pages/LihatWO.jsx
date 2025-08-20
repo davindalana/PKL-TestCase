@@ -40,9 +40,9 @@ BOOKING DATE : ${item.booking_date || "-"}
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:3001/api/wo");
-        const data = await response.json();
-        setWoData(data);
+        const response = await fetch("http://localhost:3000/api/view-mysql");
+        const result = await response.json();
+        setWoData(Array.isArray(result.data) ? result.data : []);
       } catch (error) {
         setWoData([]);
       }
@@ -161,41 +161,52 @@ BOOKING DATE : ${item.booking_date || "-"}
             </tr>
           </thead>
           <tbody>
-            {getCurrentPageData().map((item) => (
-              <tr key={item.incident || item.id}>
-                <td className="aksi-cell">
-                  <button
-                    onClick={() => setFormatIncident(item)}
-                    className="btn btn-secondary aksi-btn"
-                  >
-                    Format
-                  </button>
-                  <button
-                    onClick={() => handleCopy(item)}
-                    className="btn btn-info aksi-btn"
-                  >
-                    Salin
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.incident)}
-                    className="btn btn-danger aksi-btn"
-                  >
-                    Hapus
-                  </button>
+            {getCurrentPageData().length === 0 ? (
+              <tr>
+                <td
+                  colSpan={1 + allKeys.length}
+                  style={{ textAlign: "center" }}
+                >
+                  Tidak ada data incident
                 </td>
-                {allKeys.map((key) => {
-                  const value =
-                    item[key] !== null && item[key] !== undefined
-                      ? String(item[key])
-                      : "";
-                  return (
-                    <td key={key} className="data-cell" title={value}>
-                      {value}
-                    </td>
-                  );
-                })}
               </tr>
-            ))}
+            ) : (
+              getCurrentPageData().map((item) => (
+                <tr key={item.incident || item.id}>
+                  <td className="aksi-cell">
+                    <button
+                      onClick={() => setFormatIncident(item)}
+                      className="btn btn-secondary aksi-btn"
+                    >
+                      Format
+                    </button>
+                    <button
+                      onClick={() => handleCopy(item)}
+                      className="btn btn-info aksi-btn"
+                    >
+                      Salin
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.incident)}
+                      className="btn btn-danger aksi-btn"
+                    >
+                      Hapus
+                    </button>
+                  </td>
+                  {allKeys.map((key) => {
+                    const value =
+                      item[key] !== null && item[key] !== undefined
+                        ? String(item[key])
+                        : "";
+                    return (
+                      <td key={key} className="data-cell" title={value}>
+                        {value}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
