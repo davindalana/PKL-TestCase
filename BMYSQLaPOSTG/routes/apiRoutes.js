@@ -65,15 +65,9 @@ router.post("/sync-to-mysql", async (req, res) => {
       await conn.beginTransaction();
 
       for (const row of postgresRows) {
-        // ==> LOGIKA UTAMA DI SINI <==
-        // Perintah ini hanya akan berhasil jika `row.service_no` ditemukan di tabel `work_orders`.
-        // Jika tidak ada `service_no` yang cocok, perintah ini tidak akan mengubah apapun
-        // dan perulangan akan lanjut ke data berikutnya.
         const query = "UPDATE work_orders SET alamat = ? WHERE service_no = ?";
-
         const [result] = await conn.query(query, [row.alamat, row.service_no]);
 
-        // Hitung hanya jika ada baris yang benar-benar diperbarui
         if (result.affectedRows > 0) {
           updatedCount++;
         }
@@ -125,13 +119,12 @@ router.get("/view-mysql", async (req, res) => {
  * URL: /api/work-orders
  */
 router.post("/work-orders", async (req, res) => {
-  const data = req.body; // Data diharapkan berupa array of objects
+  const data = req.body; 
 
   if (!Array.isArray(data) || data.length === 0) {
     return res.status(400).json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." });
   }
 
-  // Daftar semua kolom di tabel work_orders (sesuai CREATE TABLE Anda)
   const columns = [
     'incident', 'ticket_id_gamas', 'external_ticket_id', 'customer_id', 'customer_name',
     'service_id', 'service_no', 'summary', 'description_assignment', 'reported_date',
@@ -147,20 +140,20 @@ router.post("/work-orders", async (req, res) => {
     'technician', 'device_name', 'sn_ont', 'tipe_ont', 'manufacture_ont', 'impacted_site',
     'cause', 'resolution', 'worklog_summary', 'classification_flag', 'realm',
     'related_to_gamas', 'tsc_result', 'scc_result', 'note', 'notes_eskalasi',
-    'rk_information', 'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat'
+    'rk_information', 'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat',
+    'korlap' // <-- Perubahan ditambahkan di sini
   ];
 
   const conn = await mysqlPool.getConnection();
   try {
-    await conn.beginTransaction(); // Mulai transaksi
+    await conn.beginTransaction(); 
 
     let processedCount = 0;
     for (const row of data) {
-      // Buat query dinamis
       const keys = Object.keys(row).filter(key => columns.includes(key));
       const values = keys.map(key => row[key]);
 
-      if (keys.length === 0 || !row.incident) continue; // Lewati jika tidak ada data atau incident
+      if (keys.length === 0 || !row.incident) continue;
 
       const query = `
         INSERT INTO work_orders (${keys.join(', ')})
@@ -173,10 +166,10 @@ router.post("/work-orders", async (req, res) => {
       processedCount++;
     }
 
-    await conn.commit(); // Simpan semua perubahan jika berhasil
+    await conn.commit(); 
     res.status(201).json({ success: true, message: `${processedCount} baris work order berhasil diproses.` });
   } catch (err) {
-    await conn.rollback(); // Batalkan jika ada error
+    await conn.rollback(); 
     console.error("Gagal menyimpan work orders:", err);
     res.status(500).json({ success: false, error: err.message });
   } finally {
@@ -184,8 +177,9 @@ router.post("/work-orders", async (req, res) => {
   }
 });
 
+
 /**
- * ENDPOINT BARU: Mengedit/Update Work Order di MySQL
+ * ENDPOINT: Mengedit Work Order DAN Sinkronisasi Alamat
  * Metode: PUT
  * URL: /api/work-orders/:incident
  */
@@ -193,7 +187,6 @@ router.put("/work-orders/:incident", async (req, res) => {
     const { incident } = req.params;
     const data = req.body;
 
-    // Hapus primary key dari data yang akan di-update
     delete data.incident;
 
     const allColumns = [
@@ -208,7 +201,8 @@ router.put("/work-orders/:incident", async (req, res) => {
         'description_actual_solution', 'kode_produk', 'perangkat', 'technician', 'device_name', 'sn_ont', 'tipe_ont', 
         'manufacture_ont', 'impacted_site', 'cause', 'resolution', 'worklog_summary', 'classification_flag', 'realm', 
         'related_to_gamas', 'tsc_result', 'scc_result', 'note', 'notes_eskalasi', 'rk_information', 
-        'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat'
+        'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat',
+        'korlap' // <-- Perubahan ditambahkan di sini
     ];
     const dateColumns = ['reported_date', 'status_date', 'booking_date', 'resolve_date', 'date_modified'];
 
@@ -220,11 +214,7 @@ router.put("/work-orders/:incident", async (req, res) => {
     const values = keys.map(key => {
         const value = data[key];
         if (dateColumns.includes(key) && typeof value === 'string' && value.includes('T')) {
-            try {
-                return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
-            } catch (e) {
-                return value;
-            }
+            try { return new Date(value).toISOString().slice(0, 19).replace('T', ' '); } catch (e) { return value; }
         }
         return value;
     });
@@ -235,8 +225,6 @@ router.put("/work-orders/:incident", async (req, res) => {
     const conn = await mysqlPool.getConnection();
     try {
         await conn.beginTransaction();
-
-        // --- TAHAP 1: UPDATE WORK ORDER ---
         const [result] = await conn.query(updateQuery, [...values, incident]);
 
         if (result.affectedRows === 0) {
@@ -246,18 +234,15 @@ router.put("/work-orders/:incident", async (req, res) => {
 
         let syncMessage = "Work order berhasil diperbarui.";
 
-        // --- TAHAP 2: SINKRONISASI ALAMAT JIKA ADA service_no ---
         if (data.service_no) {
             const { rows: postgresRows } = await postgresPool.query(
-                "SELECT alamat FROM data_layanan WHERE service_no = $1 AND alamat IS NOT NULL",
-                [data.service_no]
+                "SELECT alamat FROM data_layanan WHERE service_no = $1 AND alamat IS NOT NULL", [data.service_no]
             );
 
             if (postgresRows.length > 0) {
                 const alamatFromPostgres = postgresRows[0].alamat;
                 const syncQuery = "UPDATE work_orders SET alamat = ? WHERE service_no = ?";
                 const [syncResult] = await conn.query(syncQuery, [alamatFromPostgres, data.service_no]);
-
                 if (syncResult.affectedRows > 0) {
                     syncMessage += ` Alamat untuk service_no ${data.service_no} juga berhasil disinkronkan.`;
                 }
@@ -278,7 +263,7 @@ router.put("/work-orders/:incident", async (req, res) => {
 
 
 /**
- * ENDPOINT BARU: Menghapus Work Order dari MySQL
+ * ENDPOINT: Menghapus Work Order dari MySQL
  * Metode: DELETE
  * URL: /api/work-orders/:incident
  */
@@ -300,41 +285,34 @@ router.delete("/work-orders/:incident", async (req, res) => {
 });
 
 /**
- * ENDPOINT BARU: POST Work Order dari MySQL
+ * ENDPOINT: Menerima & Sinkronisasi Massal Work Order
  * Metode: POST
  * URL: /api/mypost
  */
-
 router.post("/mypost", async (req, res) => {
-  const data = req.body; // Data diharapkan berupa array of objects
+  const data = req.body; 
 
   if (!Array.isArray(data) || data.length === 0) {
     return res.status(400).json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." });
   }
 
-  // Daftar kolom valid untuk keamanan
   const allColumns = [
-    'incident', 'ticket_id_gamas', 'external_ticket_id', 'customer_id', 'customer_name', 'service_id', 'service_no', 'summary', 'description_assignment', 'reported_date', 'reported_by', 'reported_priority', 'source_ticket', 'channel', 'contact_phone', 'contact_name', 'contact_email', 'status', 'status_date', 'booking_date', 'resolve_date', 'date_modified', 'last_update_worklog', 'closed_by', 'closed_reopen_by', 'guarantee_status', 'ttr_customer', 'ttr_agent', 'ttr_mitra', 'ttr_nasional', 'ttr_pending', 'ttr_region', 'ttr_witel', 'ttr_end_to_end', 'owner_group', 'owner', 'witel', 'workzone', 'region', 'subsidiary', 'territory_near_end', 'territory_far_end', 'customer_segment', 'customer_type', 'customer_category', 'service_type', 'slg', 'technology', 'lapul', 'gaul', 'onu_rx', 'pending_reason', 'incident_domain', 'symptom', 'hierarchy_path', 'solution', 'description_actual_solution', 'kode_produk', 'perangkat', 'technician', 'device_name', 'sn_ont', 'tipe_ont', 'manufacture_ont', 'impacted_site', 'cause', 'resolution', 'worklog_summary', 'classification_flag', 'realm', 'related_to_gamas', 'tsc_result', 'scc_result', 'note', 'notes_eskalasi', 'rk_information', 'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat'
+    'incident', 'ticket_id_gamas', 'external_ticket_id', 'customer_id', 'customer_name', 'service_id', 'service_no', 'summary', 'description_assignment', 'reported_date', 'reported_by', 'reported_priority', 'source_ticket', 'channel', 'contact_phone', 'contact_name', 'contact_email', 'status', 'status_date', 'booking_date', 'resolve_date', 'date_modified', 'last_update_worklog', 'closed_by', 'closed_reopen_by', 'guarantee_status', 'ttr_customer', 'ttr_agent', 'ttr_mitra', 'ttr_nasional', 'ttr_pending', 'ttr_region', 'ttr_witel', 'ttr_end_to_end', 'owner_group', 'owner', 'witel', 'workzone', 'region', 'subsidiary', 'territory_near_end', 'territory_far_end', 'customer_segment', 'customer_type', 'customer_category', 'service_type', 'slg', 'technology', 'lapul', 'gaul', 'onu_rx', 'pending_reason', 'incident_domain', 'symptom', 'hierarchy_path', 'solution', 'description_actual_solution', 'kode_produk', 'perangkat', 'technician', 'device_name', 'sn_ont', 'tipe_ont', 'manufacture_ont', 'impacted_site', 'cause', 'resolution', 'worklog_summary', 'classification_flag', 'realm', 'related_to_gamas', 'tsc_result', 'scc_result', 'note', 'notes_eskalasi', 'rk_information', 'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat',
+    'korlap' // <-- Perubahan ditambahkan di sini
   ];
 
   const conn = await mysqlPool.getConnection();
   try {
-    // 1. Mulai Transaksi
     await conn.beginTransaction();
 
     let processedCount = 0;
-    const serviceNosToSync = new Set(); // Menggunakan Set agar tidak ada service_no duplikat
+    const serviceNosToSync = new Set(); 
 
-    // ========================================================================
-    // TAHAP 1: Proses dan Simpan Work Order, sambil kumpulkan service_no
-    // ========================================================================
     for (const row of data) {
-      // Abaikan kolom 'alamat' saat insert/update awal
       const validKeys = Object.keys(row).filter(key => allColumns.includes(key) && key !== 'alamat');
 
       if (validKeys.length === 0 || !row.incident) continue;
 
-      // Kumpulkan service_no yang valid untuk disinkronkan nanti
       if (row.service_no) {
         serviceNosToSync.add(row.service_no);
       }
@@ -351,21 +329,16 @@ router.post("/mypost", async (req, res) => {
       processedCount++;
     }
     
-    // ========================================================================
-    // TAHAP 2: Sinkronisasi Alamat dari PostgreSQL
-    // ========================================================================
     let addressUpdatedCount = 0;
     if (serviceNosToSync.size > 0) {
       const serviceNoArray = Array.from(serviceNosToSync);
 
-      // Query ke PostgreSQL HANYA untuk service_no yang relevan
       const { rows: postgresRows } = await postgresPool.query(
         'SELECT service_no, alamat FROM data_layanan WHERE service_no = ANY($1)',
         [serviceNoArray]
       );
 
       if (postgresRows.length > 0) {
-        // Lakukan update alamat di MySQL
         for (const pgRow of postgresRows) {
           const updateQuery = "UPDATE work_orders SET alamat = ? WHERE service_no = ?";
           const [result] = await conn.query(updateQuery, [pgRow.alamat, pgRow.service_no]);
@@ -376,7 +349,6 @@ router.post("/mypost", async (req, res) => {
       }
     }
 
-    // 2. Jika semua berhasil, simpan perubahan
     await conn.commit();
 
     res.status(201).json({
@@ -385,12 +357,10 @@ router.post("/mypost", async (req, res) => {
     });
 
   } catch (err) {
-    // 3. Jika ada error, batalkan semua perubahan
     await conn.rollback();
     console.error("Gagal memproses work orders:", err);
     res.status(500).json({ success: false, error: err.message });
   } finally {
-    // 4. Selalu lepaskan koneksi
     conn.release();
   }
 });
