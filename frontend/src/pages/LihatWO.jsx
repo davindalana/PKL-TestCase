@@ -87,7 +87,7 @@ BOOKING DATE : ${item.booking_date || "-"}
   const handleDelete = async (incident) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus data incident ini?")) {
       try {
-        await fetch(`http://localhost:3000/api/delete-wo/${incident}`, { method: 'DELETE' });
+        await fetch(`http://localhost:3000/api/work-orders/${incident}`, { method: 'DELETE' });
       } catch {}
       setWoData(woData.filter((item) => item.incident !== incident));
       setSelectedItems(selectedItems.filter((item) => item !== incident));
@@ -112,7 +112,7 @@ BOOKING DATE : ${item.booking_date || "-"}
   };
   const handleEditSave = async () => {
     try {
-      await fetch(`http://localhost:3000/api/update-wo/${editItem.incident}`, {
+      await fetch(`http://localhost:3000/api/work-orders/${editItem.incident}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),

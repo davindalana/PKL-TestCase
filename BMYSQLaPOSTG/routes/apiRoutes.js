@@ -196,30 +196,47 @@ router.put("/work-orders/:incident", async (req, res) => {
   // Hapus primary key dari data yang akan di-update
   delete data.incident; 
 
-  const columns = [
-    'ticket_id_gamas', 'external_ticket_id', 'customer_id', 'customer_name',
-    'service_id', 'service_no', 'summary', 'description_assignment', 'reported_date',
-    'reported_by', 'reported_priority', 'source_ticket', 'channel', 'contact_phone',
-    'contact_name', 'contact_email', 'status', 'status_date', 'booking_date', 'resolve_date',
-    'date_modified', 'last_update_worklog', 'closed_by', 'closed_reopen_by',
-    'guarantee_status', 'ttr_customer', 'ttr_agent', 'ttr_mitra', 'ttr_nasional',
-    'ttr_pending', 'ttr_region', 'ttr_witel', 'ttr_end_to_end', 'owner_group', 'owner',
-    'witel', 'workzone', 'region', 'subsidiary', 'territory_near_end', 'territory_far_end',
-    'customer_segment', 'customer_type', 'customer_category', 'service_type', 'slg',
-    'technology', 'lapul', 'gaul', 'onu_rx', 'pending_reason', 'incident_domain', 'symptom',
-    'hierarchy_path', 'solution', 'description_actual_solution', 'kode_produk', 'perangkat',
-    'technician', 'device_name', 'sn_ont', 'tipe_ont', 'manufacture_ont', 'impacted_site',
-    'cause', 'resolution', 'worklog_summary', 'classification_flag', 'realm',
-    'related_to_gamas', 'tsc_result', 'scc_result', 'note', 'notes_eskalasi',
-    'rk_information', 'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat'
+  const allColumns = [
+    'ticket_id_gamas', 'external_ticket_id', 'customer_id', 'customer_name', 'service_id', 'service_no', 
+    'summary', 'description_assignment', 'reported_date', 'reported_by', 'reported_priority', 'source_ticket', 
+    'channel', 'contact_phone', 'contact_name', 'contact_email', 'status', 'status_date', 'booking_date', 
+    'resolve_date', 'date_modified', 'last_update_worklog', 'closed_by', 'closed_reopen_by', 'guarantee_status', 
+    'ttr_customer', 'ttr_agent', 'ttr_mitra', 'ttr_nasional', 'ttr_pending', 'ttr_region', 'ttr_witel', 
+    'ttr_end_to_end', 'owner_group', 'owner', 'witel', 'workzone', 'region', 'subsidiary', 'territory_near_end', 
+    'territory_far_end', 'customer_segment', 'customer_type', 'customer_category', 'service_type', 'slg', 
+    'technology', 'lapul', 'gaul', 'onu_rx', 'pending_reason', 'incident_domain', 'symptom', 'hierarchy_path', 
+    'solution', 'description_actual_solution', 'kode_produk', 'perangkat', 'technician', 'device_name', 'sn_ont', 
+    'tipe_ont', 'manufacture_ont', 'impacted_site', 'cause', 'resolution', 'worklog_summary', 'classification_flag', 
+    'realm', 'related_to_gamas', 'tsc_result', 'scc_result', 'note', 'notes_eskalasi', 'rk_information', 
+    'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat'
   ];
 
-  const keys = Object.keys(data).filter(key => columns.includes(key));
-  const values = keys.map(key => data[key]);
+  // === PERUBAHAN DIMULAI DI SINI ===
 
+  // Daftar kolom yang berpotensi memiliki format tanggal
+  const dateColumns = ['reported_date', 'status_date', 'booking_date', 'resolve_date', 'date_modified'];
+
+  const keys = Object.keys(data).filter(key => allColumns.includes(key));
+  
   if (keys.length === 0) {
     return res.status(400).json({ success: false, message: "Tidak ada data valid untuk diperbarui." });
   }
+
+  // Format ulang nilai tanggal sebelum dimasukkan ke query
+  const values = keys.map(key => {
+    const value = data[key];
+    if (dateColumns.includes(key) && typeof value === 'string' && value.includes('T')) {
+      // Ubah format '2025-08-12T10:42:15.000Z' menjadi '2025-08-12 10:42:15'
+      try {
+        return new Date(value).toISOString().slice(0, 19).replace('T', ' ');
+      } catch (e) {
+        return value; // Jika format tidak valid, biarkan apa adanya
+      }
+    }
+    return value;
+  });
+
+  // === PERUBAHAN SELESAI DI SINI ===
 
   const setClauses = keys.map(k => `${k} = ?`).join(', ');
   const query = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
@@ -234,9 +251,11 @@ router.put("/work-orders/:incident", async (req, res) => {
     res.json({ success: true, message: `Work order dengan incident ${incident} berhasil diperbarui.` });
   } catch (err) {
     console.error("Gagal mengedit work order:", err);
-    res.status(500).json({ success: false, error: err.message });
+    // Kirim kembali detail error SQL untuk debugging
+    res.status(500).json({ success: false, error: err.message, sqlMessage: err.sqlMessage });
   }
 });
+
 
 /**
  * ENDPOINT BARU: Menghapus Work Order dari MySQL
