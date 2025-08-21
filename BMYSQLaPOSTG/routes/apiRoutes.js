@@ -184,6 +184,87 @@ router.post("/work-orders", async (req, res) => {
   }
 });
 
+/**
+ * ENDPOINT BARU: Mengedit/Update Work Order di MySQL
+ * Metode: PUT
+ * URL: /api/work-orders/:incident
+ */
+router.put("/work-orders/:incident", async (req, res) => {
+  const { incident } = req.params;
+  const data = req.body;
+
+  // Hapus primary key dari data yang akan di-update
+  delete data.incident; 
+
+  const columns = [
+    'ticket_id_gamas', 'external_ticket_id', 'customer_id', 'customer_name',
+    'service_id', 'service_no', 'summary', 'description_assignment', 'reported_date',
+    'reported_by', 'reported_priority', 'source_ticket', 'channel', 'contact_phone',
+    'contact_name', 'contact_email', 'status', 'status_date', 'booking_date', 'resolve_date',
+    'date_modified', 'last_update_worklog', 'closed_by', 'closed_reopen_by',
+    'guarantee_status', 'ttr_customer', 'ttr_agent', 'ttr_mitra', 'ttr_nasional',
+    'ttr_pending', 'ttr_region', 'ttr_witel', 'ttr_end_to_end', 'owner_group', 'owner',
+    'witel', 'workzone', 'region', 'subsidiary', 'territory_near_end', 'territory_far_end',
+    'customer_segment', 'customer_type', 'customer_category', 'service_type', 'slg',
+    'technology', 'lapul', 'gaul', 'onu_rx', 'pending_reason', 'incident_domain', 'symptom',
+    'hierarchy_path', 'solution', 'description_actual_solution', 'kode_produk', 'perangkat',
+    'technician', 'device_name', 'sn_ont', 'tipe_ont', 'manufacture_ont', 'impacted_site',
+    'cause', 'resolution', 'worklog_summary', 'classification_flag', 'realm',
+    'related_to_gamas', 'tsc_result', 'scc_result', 'note', 'notes_eskalasi',
+    'rk_information', 'external_ticket_tier_3', 'classification_path', 'urgency', 'alamat'
+  ];
+
+  const keys = Object.keys(data).filter(key => columns.includes(key));
+  const values = keys.map(key => data[key]);
+
+  if (keys.length === 0) {
+    return res.status(400).json({ success: false, message: "Tidak ada data valid untuk diperbarui." });
+  }
+
+  const setClauses = keys.map(k => `${k} = ?`).join(', ');
+  const query = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
+
+  try {
+    const [result] = await mysqlPool.query(query, [...values, incident]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: `Work order dengan incident ${incident} tidak ditemukan.` });
+    }
+
+    res.json({ success: true, message: `Work order dengan incident ${incident} berhasil diperbarui.` });
+  } catch (err) {
+    console.error("Gagal mengedit work order:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * ENDPOINT BARU: Menghapus Work Order dari MySQL
+ * Metode: DELETE
+ * URL: /api/work-orders/:incident
+ */
+router.delete("/work-orders/:incident", async (req, res) => {
+  const { incident } = req.params;
+
+  try {
+    const [result] = await mysqlPool.query("DELETE FROM work_orders WHERE incident = ?", [incident]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: `Work order dengan incident ${incident} tidak ditemukan.` });
+    }
+
+    res.json({ success: true, message: `Work order dengan incident ${incident} berhasil dihapus.` });
+  } catch (err) {
+    console.error("Gagal menghapus work order:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * ENDPOINT BARU: POST Work Order dari MySQL
+ * Metode: POST
+ * URL: /api/mypost
+ */
 
 router.post("/mypost", async (req, res) => {
   const data = req.body; // Data diharapkan berupa array of objects

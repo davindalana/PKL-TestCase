@@ -1,10 +1,10 @@
 const { Pool } = require("pg");
 
 const pool = new Pool({
-  user: "postgres", // Ganti dengan user PostgreSQL Anda
-  host: "localhost",
-  database: "pkl_testcase",
-  password: "123", // Ganti dengan password PostgreSQL Anda
+  host: process.env.POSTGRES_HOST,
+  user: process.env.POSTGRES_USER, // Ganti dengan user PostgreSQL Anda
+  password: process.env.POSTGRES_PASSWORD, // Ganti dengan password PostgreSQL Anda
+  database: process.env.POSTGRES_DB,
   port: 5432,
 });
 

@@ -3,10 +3,10 @@ const mysql = require("mysql2/promise");
 
 // Membuat "pool" koneksi untuk efisiensi
 const pool = mysql.createPool({
-  host: "localhost",
-  user: "root", // Ganti dengan user MySQL Anda
-  password: "1234", // Ganti dengan password MySQL Anda
-  database: "db_PKL",
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER, // Ganti dengan user MySQL Anda
+  password: process.env.MYSQL_PASSWORD, // Ganti dengan password MySQL Anda
+  database: process.env.MYSQL_DB,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
