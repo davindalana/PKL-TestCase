@@ -10,9 +10,6 @@ const LihatWO = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [formatIncident, setFormatIncident] = useState(null);
-  const [editItem, setEditItem] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [filter, setFilter] = useState({ status: '', workzone: '', witel: '' });
 
   // Helper to get formatted text for an incident
   const getFormatText = (item) =>
@@ -45,16 +42,7 @@ BOOKING DATE : ${item.booking_date || "-"}
       try {
         const response = await fetch("http://localhost:3000/api/view-mysql");
         const result = await response.json();
-        // Anti duplikat berdasarkan incident
-        const unique = [];
-        const seen = new Set();
-        (Array.isArray(result.data) ? result.data : []).forEach((item) => {
-          if (item.incident && !seen.has(item.incident)) {
-            seen.add(item.incident);
-            unique.push(item);
-          }
-        });
-        setWoData(unique);
+        setWoData(Array.isArray(result.data) ? result.data : []);
       } catch (error) {
         setWoData([]);
       }
@@ -63,67 +51,26 @@ BOOKING DATE : ${item.booking_date || "-"}
     fetchData();
   }, []);
 
-  // Filter dropdown options
-  const statusOptions = Array.from(new Set(woData.map((d) => d.status).filter(Boolean)));
-  const workzoneOptions = Array.from(new Set(woData.map((d) => d.workzone).filter(Boolean)));
-  const witelOptions = Array.from(new Set(woData.map((d) => d.witel).filter(Boolean)));
-
   useEffect(() => {
-    let filtered = woData.filter((item) =>
+    const filtered = woData.filter((item) =>
       Object.values(item).some(
         (value) =>
           value &&
           value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
-    // Filter by dropdowns
-    if (filter.status) filtered = filtered.filter((d) => d.status === filter.status);
-    if (filter.workzone) filtered = filtered.filter((d) => d.workzone === filter.workzone);
-    if (filter.witel) filtered = filtered.filter((d) => d.witel === filter.witel);
     setFilteredData(filtered);
     setCurrentPage(1);
-  }, [searchTerm, woData, filter]);
+  }, [searchTerm, woData]);
 
   const handleDelete = async (incident) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data incident ini?")) {
-      try {
-        await fetch(`http://localhost:3000/api/work-orders/${incident}`, { method: 'DELETE' });
-      } catch {}
+    if (
+      window.confirm("Apakah Anda yakin ingin menghapus data incident ini?")
+    ) {
       setWoData(woData.filter((item) => item.incident !== incident));
       setSelectedItems(selectedItems.filter((item) => item !== incident));
     }
   };
-  // Dummy mapping workzone -> korlap
-  const korlapMap = {
-    'BTU': 'Budi',
-    'MLG': 'Siti',
-    'KDR': 'Andi',
-    'default': 'Korlap Default'
-  };
-  const getKorlap = (workzone) => korlapMap[workzone] || korlapMap['default'];
-  // Edit logic
-  const handleEdit = (item) => {
-    setEditItem(item);
-    setEditForm({ ...item });
-  };
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
-  };
-  const handleEditSave = async () => {
-    try {
-      await fetch(`http://localhost:3000/api/work-orders/${editItem.incident}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
-      });
-      setWoData((prev) => prev.map((d) => d.incident === editItem.incident ? { ...editForm } : d));
-      setEditItem(null);
-    } catch {
-      alert('Gagal update data');
-    }
-  };
-  const handleEditCancel = () => setEditItem(null);
 
   const handleBulkDelete = async () => {
     if (selectedItems.length === 0) return;
@@ -181,11 +128,9 @@ BOOKING DATE : ${item.booking_date || "-"}
   }
 
   // Get all unique keys from data for dynamic table columns
-  let allKeys = Array.from(
+  const allKeys = Array.from(
     new Set(filteredData.flatMap((obj) => Object.keys(obj)))
   );
-  // Tambahkan kolom korlap jika belum ada
-  if (!allKeys.includes('korlap')) allKeys.push('korlap');
 
   return (
     <div className="lihat-wo-container">
@@ -202,20 +147,6 @@ BOOKING DATE : ${item.booking_date || "-"}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
-          </div>
-          <div className="filter-box" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <select value={filter.status} onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}>
-              <option value="">Semua Status</option>
-              {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-            <select value={filter.workzone} onChange={e => setFilter(f => ({ ...f, workzone: e.target.value }))}>
-              <option value="">Semua Workzone</option>
-              {workzoneOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-            <select value={filter.witel} onChange={e => setFilter(f => ({ ...f, witel: e.target.value }))}>
-              <option value="">Semua Witel</option>
-              {witelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
           </div>
         </div>
       </div>
@@ -256,12 +187,6 @@ BOOKING DATE : ${item.booking_date || "-"}
                       Salin
                     </button>
                     <button
-                      onClick={() => handleEdit(item)}
-                      className="btn btn-warning aksi-btn"
-                    >
-                      Edit
-                    </button>
-                    <button
                       onClick={() => handleDelete(item.incident)}
                       className="btn btn-danger aksi-btn"
                     >
@@ -269,52 +194,16 @@ BOOKING DATE : ${item.booking_date || "-"}
                     </button>
                   </td>
                   {allKeys.map((key) => {
-                    let value = item[key];
-                    let cellClass = "data-cell";
-                    if (key === 'korlap') {
-                      value = getKorlap(item.workzone);
-                      cellClass = "korlap-cell";
-                    }
-                    value = value !== null && value !== undefined ? String(value) : "";
+                    const value =
+                      item[key] !== null && item[key] !== undefined
+                        ? String(item[key])
+                        : "";
                     return (
-                      <td key={key} className={cellClass} title={value}>
+                      <td key={key} className="data-cell" title={value}>
                         {value}
                       </td>
                     );
                   })}
-      {/* Modal Edit Incident */}
-      {editItem && (
-        <div className="format-modal" onClick={handleEditCancel}>
-          <div className="format-modal-content" onClick={e => e.stopPropagation()}>
-            <h2>Edit Incident</h2>
-            <form onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
-              {Object.keys(editForm).map((key) => (
-                key === 'incident' ? (
-                  <div key={key}><b>ID: {editForm[key]}</b></div>
-                ) : (
-                  <div key={key} style={{ marginBottom: 8 }}>
-                    <label style={{ fontWeight: 600 }}>{key.replace(/_/g, ' ')}:</label>
-                    {['status', 'workzone', 'witel'].includes(key) ? (
-                      <select name={key} value={editForm[key] || ''} onChange={handleEditChange}>
-                        <option value="">-</option>
-                        {key === 'status' && statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        {key === 'workzone' && workzoneOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        {key === 'witel' && witelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    ) : (
-                      <input name={key} value={editForm[key] || ''} onChange={handleEditChange} />
-                    )}
-                  </div>
-                )
-              ))}
-              <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-                <button type="submit" className="btn btn-primary">Simpan</button>
-                <button type="button" className="btn btn-outline" onClick={handleEditCancel}>Batal</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
                 </tr>
               ))
             )}
