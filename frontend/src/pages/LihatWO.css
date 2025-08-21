@@ -1,14 +1,20 @@
 /* === General Layout === */
+
 .lihat-wo-container {
-  max-width: 95%;
+  max-width: 98vw;
   margin: 2rem auto;
   padding: 0 1rem;
+  background: #f9fafb;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
 }
 
 .page-header h1 {
   text-align: center;
-  color: #2d3748;
+  color: #3b3663;
   margin-bottom: 2rem;
+  font-size: 2rem;
+  letter-spacing: 1px;
 }
 
 /* === Loading State === */
@@ -36,31 +42,35 @@
 
 /* === Controls (Search, Filter, Actions) === */
 .table-controls {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   gap: 1.5rem;
   flex-wrap: wrap;
 }
 .search-section {
   flex: 1;
-  min-width: 300px;
+  min-width: 260px;
+  margin-bottom: 0.5rem;
 }
 .search-input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 1rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 1rem;
+  background: #f7fafc;
+  transition: border-color 0.2s;
 }
 .search-input:focus {
   outline: none;
   border-color: #667eea;
+  background: #fff;
 }
 .filter-box {
   display: flex;
@@ -72,23 +82,26 @@
   padding: 0.5rem 1rem;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   background: #f7fafc;
+  transition: border-color 0.2s;
 }
 .action-section {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 /* === Column Selector === */
 .column-selector {
   background: #f7fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  padding: 1.2rem 1.5rem;
   margin-bottom: 1.5rem;
   animation: fadeIn 0.3s;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
 }
 .column-selector h4 {
   margin-top: 0;
@@ -96,7 +109,7 @@
 }
 .column-selector-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 0.75rem;
 }
 .column-item {
@@ -124,8 +137,9 @@
 .table-container {
   overflow-x: auto;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.07);
+  background: #fff;
 }
 .wo-table {
   width: 100%;
@@ -143,9 +157,11 @@
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
+  transition: background 0.2s;
 }
 .wo-table th:hover {
   background: #5a67d8;
+  filter: brightness(1.05);
 }
 .sort-icon {
   margin-left: 4px;
@@ -153,19 +169,23 @@
   display: inline-block;
 }
 .wo-table td {
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 1rem;
   border-bottom: 1px solid #e2e8f0;
   vertical-align: middle;
+  background: #fff;
+  transition: background 0.2s;
 }
 .wo-table tbody tr:nth-child(even) {
   background-color: #f8fafc;
 }
 .wo-table tbody tr:hover {
   background-color: #e9f0fb;
+  filter: brightness(1.01);
 }
 .wo-table tbody tr.selected {
   background-color: #ebf8ff !important;
   box-shadow: inset 4px 0 0 #4299e1;
+  filter: brightness(1.03);
 }
 .no-data {
   text-align: center;
@@ -198,15 +218,17 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
   border: none;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(44, 62, 80, 0.04);
 }
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  filter: grayscale(0.2);
 }
 .btn-danger {
   background-color: #e53e3e;
@@ -265,8 +287,8 @@
   padding: 1rem;
   margin-top: 1.5rem;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -369,10 +391,32 @@
   }
 }
 /* === Responsive Styles === */
+@media (max-width: 900px) {
+  .lihat-wo-container {
+    padding: 0 0.2rem;
+  }
+  .table-controls {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem 0.5rem;
+  }
+  .search-section {
+    min-width: 180px;
+  }
+  .action-section {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+  .column-selector {
+    padding: 1rem 0.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .data-cell {
     font-size: 0.8rem;
-    max-width: 200px;
+    max-width: 120px;
   }
   .btn {
     padding: 0.4rem 0.8rem;
@@ -380,5 +424,15 @@
   }
   .pagination button {
     padding: 0.4rem 0.8rem;
+  }
+  .wo-table th, .wo-table td {
+    padding: 0.5rem 0.5rem;
+  }
+  .table-container {
+    border-radius: 8px;
+  }
+  .format-modal-content {
+    padding: 1rem;
+    max-width: 98vw;
   }
 }

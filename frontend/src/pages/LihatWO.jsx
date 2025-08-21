@@ -114,23 +114,39 @@ BOOKING DATE : ${item.booking_date || "-"}
     }
   }, [allKeys]);
 
-  // Filter options dari kode asli Anda
-  const { statusOptions, workzoneOptions, witelOptions } = useMemo(() => {
-    const statusSet = new Set(woData.map((d) => d.status).filter(Boolean));
-    if (!statusSet.has("NEW")) statusSet.add("NEW");
-    return {
-      statusOptions: [
-        "NEW",
-        ...Array.from(statusSet).filter((s) => s !== "NEW"),
-      ],
-      workzoneOptions: Array.from(
-        new Set(woData.map((d) => d.workzone).filter(Boolean))
-      ),
-      witelOptions: Array.from(
-        new Set(woData.map((d) => d.witel).filter(Boolean))
-      ),
-    };
-  }, [woData]);
+  // =================================================================
+  // ▼▼▼ BAGIAN YANG DIPERBAIKI: OPSI FILTER DAN KORLAP DINAMIS ▼▼▼
+  // =================================================================
+  const { statusOptions, workzoneOptions, witelOptions, korlapOptions } =
+    useMemo(() => {
+      const statusSet = new Set(woData.map((d) => d.status).filter(Boolean));
+      if (!statusSet.has("NEW")) statusSet.add("NEW");
+
+      // Membuat daftar korlap dinamis
+      const korlapSet = new Set(["Budi", "Siti", "Andi", "Rina", "Dedi"]); // Nama default
+      woData.forEach((item) => {
+        if (item.korlap) {
+          korlapSet.add(item.korlap); // Tambah nama dari data
+        }
+      });
+
+      return {
+        statusOptions: [
+          "NEW",
+          ...Array.from(statusSet).filter((s) => s !== "NEW"),
+        ],
+        workzoneOptions: Array.from(
+          new Set(woData.map((d) => d.workzone).filter(Boolean))
+        ),
+        witelOptions: Array.from(
+          new Set(woData.map((d) => d.witel).filter(Boolean))
+        ),
+        korlapOptions: Array.from(korlapSet).sort(), // Mengurutkan nama korlap
+      };
+    }, [woData]);
+  // =================================================================
+  // ▲▲▲ AKHIR DARI BAGIAN YANG DIPERBAIKI ▲▲▲
+  // =================================================================
 
   // Logika filter & search
   useEffect(() => {
@@ -188,7 +204,6 @@ BOOKING DATE : ${item.booking_date || "-"}
     }
   };
 
-  const korlapList = ["Budi", "Siti", "Andi", "Rina", "Dedi"];
   const handleEdit = (item) => {
     setEditItem(item);
     setEditForm({ ...item });
@@ -580,7 +595,8 @@ BOOKING DATE : ${item.booking_date || "-"}
                               disabled={updatingStatus[item.incident + "-k"]}
                             >
                               <option value="">- Pilih -</option>
-                              {korlapList.map((opt) => (
+                              {/* Gunakan korlapOptions yang dinamis */}
+                              {korlapOptions.map((opt) => (
                                 <option key={opt} value={opt}>
                                   {opt}
                                 </option>
@@ -659,17 +675,40 @@ BOOKING DATE : ${item.booking_date || "-"}
                 handleEditSave();
               }}
             >
-              {Object.keys(editForm).map((key) => (
-                <div key={key} className="form-group">
-                  <label>{key.replace(/_/g, " ")}:</label>
-                  <input
-                    name={key}
-                    value={editForm[key] || ""}
-                    onChange={handleEditChange}
-                    disabled={key === "incident"}
-                  />
-                </div>
-              ))}
+              {Object.keys(editForm).map((key) => {
+                if (key === "korlap") {
+                  return (
+                    <div key={key} className="form-group">
+                      <label>{key.replace(/_/g, " ")}:</label>
+                      <input
+                        list="korlap-options"
+                        name={key}
+                        value={editForm[key] || ""}
+                        onChange={handleEditChange}
+                        placeholder="Pilih atau ketik korlap baru"
+                      />
+                      <datalist id="korlap-options">
+                        {/* Gunakan korlapOptions yang dinamis */}
+                        {korlapOptions.map((korlapName) => (
+                          <option key={korlapName} value={korlapName} />
+                        ))}
+                      </datalist>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={key} className="form-group">
+                    <label>{key.replace(/_/g, " ")}:</label>
+                    <input
+                      name={key}
+                      value={editForm[key] || ""}
+                      onChange={handleEditChange}
+                      disabled={key === "incident"}
+                    />
+                  </div>
+                );
+              })}
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary">
                   Simpan
