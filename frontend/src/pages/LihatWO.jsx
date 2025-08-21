@@ -65,9 +65,10 @@ BOOKING DATE : ${item.booking_date || "-"}
   }, []);
 
   // Filter dropdown options
-  const statusOptions = Array.from(
+  let statusOptions = Array.from(
     new Set(woData.map((d) => d.status).filter(Boolean))
   );
+  if (!statusOptions.includes("NEW")) statusOptions = ["NEW", ...statusOptions];
   const workzoneOptions = Array.from(
     new Set(woData.map((d) => d.workzone).filter(Boolean))
   );
