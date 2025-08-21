@@ -12,7 +12,8 @@ const LihatWO = () => {
   const [formatIncident, setFormatIncident] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [filter, setFilter] = useState({ status: '', workzone: '', witel: '' });
+  const [updatingStatus, setUpdatingStatus] = useState({}); // {incident: true/false}
+  const [filter, setFilter] = useState({ status: "", workzone: "", witel: "" });
 
   // Helper to get formatted text for an incident
   const getFormatText = (item) =>
@@ -64,9 +65,15 @@ BOOKING DATE : ${item.booking_date || "-"}
   }, []);
 
   // Filter dropdown options
-  const statusOptions = Array.from(new Set(woData.map((d) => d.status).filter(Boolean)));
-  const workzoneOptions = Array.from(new Set(woData.map((d) => d.workzone).filter(Boolean)));
-  const witelOptions = Array.from(new Set(woData.map((d) => d.witel).filter(Boolean)));
+  const statusOptions = Array.from(
+    new Set(woData.map((d) => d.status).filter(Boolean))
+  );
+  const workzoneOptions = Array.from(
+    new Set(woData.map((d) => d.workzone).filter(Boolean))
+  );
+  const witelOptions = Array.from(
+    new Set(woData.map((d) => d.witel).filter(Boolean))
+  );
 
   useEffect(() => {
     let filtered = woData.filter((item) =>
@@ -77,17 +84,24 @@ BOOKING DATE : ${item.booking_date || "-"}
       )
     );
     // Filter by dropdowns
-    if (filter.status) filtered = filtered.filter((d) => d.status === filter.status);
-    if (filter.workzone) filtered = filtered.filter((d) => d.workzone === filter.workzone);
-    if (filter.witel) filtered = filtered.filter((d) => d.witel === filter.witel);
+    if (filter.status)
+      filtered = filtered.filter((d) => d.status === filter.status);
+    if (filter.workzone)
+      filtered = filtered.filter((d) => d.workzone === filter.workzone);
+    if (filter.witel)
+      filtered = filtered.filter((d) => d.witel === filter.witel);
     setFilteredData(filtered);
     setCurrentPage(1);
   }, [searchTerm, woData, filter]);
 
   const handleDelete = async (incident) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus data incident ini?")) {
+    if (
+      window.confirm("Apakah Anda yakin ingin menghapus data incident ini?")
+    ) {
       try {
-        await fetch(`http://localhost:3000/api/work-orders/${incident}`, { method: 'DELETE' });
+        await fetch(`http://localhost:3000/api/work-orders/${incident}`, {
+          method: "DELETE",
+        });
       } catch {}
       setWoData(woData.filter((item) => item.incident !== incident));
       setSelectedItems(selectedItems.filter((item) => item !== incident));
@@ -95,12 +109,12 @@ BOOKING DATE : ${item.booking_date || "-"}
   };
   // Dummy mapping workzone -> korlap
   const korlapMap = {
-    'BTU': 'Budi',
-    'MLG': 'Siti',
-    'KDR': 'Andi',
-    'default': 'Korlap Default'
+    BTU: "Budi",
+    MLG: "Siti",
+    KDR: "Andi",
+    default: "Korlap Default",
   };
-  const getKorlap = (workzone) => korlapMap[workzone] || korlapMap['default'];
+  const getKorlap = (workzone) => korlapMap[workzone] || korlapMap["default"];
   // Edit logic
   const handleEdit = (item) => {
     setEditItem(item);
@@ -112,15 +126,22 @@ BOOKING DATE : ${item.booking_date || "-"}
   };
   const handleEditSave = async () => {
     try {
-      await fetch(`http://localhost:3000/api/work-orders/${editItem.incident}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
-      });
-      setWoData((prev) => prev.map((d) => d.incident === editItem.incident ? { ...editForm } : d));
+      await fetch(
+        `http://localhost:3000/api/work-orders/${editItem.incident}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editForm),
+        }
+      );
+      setWoData((prev) =>
+        prev.map((d) =>
+          d.incident === editItem.incident ? { ...editForm } : d
+        )
+      );
       setEditItem(null);
     } catch {
-      alert('Gagal update data');
+      alert("Gagal update data");
     }
   };
   const handleEditCancel = () => setEditItem(null);
@@ -185,7 +206,7 @@ BOOKING DATE : ${item.booking_date || "-"}
     new Set(filteredData.flatMap((obj) => Object.keys(obj)))
   );
   // Tambahkan kolom korlap jika belum ada
-  if (!allKeys.includes('korlap')) allKeys.push('korlap');
+  if (!allKeys.includes("korlap")) allKeys.push("korlap");
 
   return (
     <div className="lihat-wo-container">
@@ -203,18 +224,48 @@ BOOKING DATE : ${item.booking_date || "-"}
               className="search-input"
             />
           </div>
-          <div className="filter-box" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <select value={filter.status} onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}>
+          <div
+            className="filter-box"
+            style={{ display: "flex", gap: 8, marginTop: 8 }}
+          >
+            <select
+              value={filter.status}
+              onChange={(e) =>
+                setFilter((f) => ({ ...f, status: e.target.value }))
+              }
+            >
               <option value="">Semua Status</option>
-              {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              {statusOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
             </select>
-            <select value={filter.workzone} onChange={e => setFilter(f => ({ ...f, workzone: e.target.value }))}>
+            <select
+              value={filter.workzone}
+              onChange={(e) =>
+                setFilter((f) => ({ ...f, workzone: e.target.value }))
+              }
+            >
               <option value="">Semua Workzone</option>
-              {workzoneOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              {workzoneOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
             </select>
-            <select value={filter.witel} onChange={e => setFilter(f => ({ ...f, witel: e.target.value }))}>
+            <select
+              value={filter.witel}
+              onChange={(e) =>
+                setFilter((f) => ({ ...f, witel: e.target.value }))
+              }
+            >
               <option value="">Semua Witel</option>
-              {witelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              {witelOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -271,50 +322,158 @@ BOOKING DATE : ${item.booking_date || "-"}
                   {allKeys.map((key) => {
                     let value = item[key];
                     let cellClass = "data-cell";
-                    if (key === 'korlap') {
+                    if (key === "korlap") {
                       value = getKorlap(item.workzone);
                       cellClass = "korlap-cell";
                     }
-                    value = value !== null && value !== undefined ? String(value) : "";
+                    value =
+                      value !== null && value !== undefined
+                        ? String(value)
+                        : "";
+                    // Inline dropdown untuk kolom status
+                    if (key === "status") {
+                      return (
+                        <td key={key} className={cellClass} title={value}>
+                          <select
+                            value={item.status || ""}
+                            disabled={!!updatingStatus[item.incident]}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              setUpdatingStatus((prev) => ({
+                                ...prev,
+                                [item.incident]: true,
+                              }));
+                              try {
+                                await fetch(
+                                  `http://localhost:3000/api/work-orders/${item.incident}`,
+                                  {
+                                    method: "PUT",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      ...item,
+                                      status: newStatus,
+                                    }),
+                                  }
+                                );
+                                setWoData((prev) =>
+                                  prev.map((d) =>
+                                    d.incident === item.incident
+                                      ? { ...d, status: newStatus }
+                                      : d
+                                  )
+                                );
+                              } catch {
+                                alert("Gagal update status");
+                              }
+                              setUpdatingStatus((prev) => ({
+                                ...prev,
+                                [item.incident]: false,
+                              }));
+                            }}
+                          >
+                            {statusOptions.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                          {updatingStatus[item.incident] && (
+                            <span style={{ marginLeft: 4, fontSize: 12 }}>
+                              ⏳
+                            </span>
+                          )}
+                        </td>
+                      );
+                    }
+                    // Inline dropdown untuk kolom lain bisa ditambah di sini
                     return (
                       <td key={key} className={cellClass} title={value}>
                         {value}
                       </td>
                     );
                   })}
-      {/* Modal Edit Incident */}
-      {editItem && (
-        <div className="format-modal" onClick={handleEditCancel}>
-          <div className="format-modal-content" onClick={e => e.stopPropagation()}>
-            <h2>Edit Incident</h2>
-            <form onSubmit={e => { e.preventDefault(); handleEditSave(); }}>
-              {Object.keys(editForm).map((key) => (
-                key === 'incident' ? (
-                  <div key={key}><b>ID: {editForm[key]}</b></div>
-                ) : (
-                  <div key={key} style={{ marginBottom: 8 }}>
-                    <label style={{ fontWeight: 600 }}>{key.replace(/_/g, ' ')}:</label>
-                    {['status', 'workzone', 'witel'].includes(key) ? (
-                      <select name={key} value={editForm[key] || ''} onChange={handleEditChange}>
-                        <option value="">-</option>
-                        {key === 'status' && statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        {key === 'workzone' && workzoneOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        {key === 'witel' && witelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                      </select>
-                    ) : (
-                      <input name={key} value={editForm[key] || ''} onChange={handleEditChange} />
-                    )}
-                  </div>
-                )
-              ))}
-              <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-                <button type="submit" className="btn btn-primary">Simpan</button>
-                <button type="button" className="btn btn-outline" onClick={handleEditCancel}>Batal</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  {/* Modal Edit Incident */}
+                  {editItem && (
+                    <div className="format-modal" onClick={handleEditCancel}>
+                      <div
+                        className="format-modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <h2>Edit Incident</h2>
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleEditSave();
+                          }}
+                        >
+                          {Object.keys(editForm).map((key) =>
+                            key === "incident" ? (
+                              <div key={key}>
+                                <b>ID: {editForm[key]}</b>
+                              </div>
+                            ) : (
+                              <div key={key} style={{ marginBottom: 8 }}>
+                                <label style={{ fontWeight: 600 }}>
+                                  {key.replace(/_/g, " ")}:
+                                </label>
+                                {["status", "workzone", "witel"].includes(
+                                  key
+                                ) ? (
+                                  <select
+                                    name={key}
+                                    value={editForm[key] || ""}
+                                    onChange={handleEditChange}
+                                  >
+                                    <option value="">-</option>
+                                    {key === "status" &&
+                                      statusOptions.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                          {opt}
+                                        </option>
+                                      ))}
+                                    {key === "workzone" &&
+                                      workzoneOptions.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                          {opt}
+                                        </option>
+                                      ))}
+                                    {key === "witel" &&
+                                      witelOptions.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                          {opt}
+                                        </option>
+                                      ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    name={key}
+                                    value={editForm[key] || ""}
+                                    onChange={handleEditChange}
+                                  />
+                                )}
+                              </div>
+                            )
+                          )}
+                          <div
+                            style={{ marginTop: 16, display: "flex", gap: 8 }}
+                          >
+                            <button type="submit" className="btn btn-primary">
+                              Simpan
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              onClick={handleEditCancel}
+                            >
+                              Batal
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </tr>
               ))
             )}
