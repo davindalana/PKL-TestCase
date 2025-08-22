@@ -4,39 +4,49 @@ const postgresPool = require("../config/dbPostgres");
 const mysqlPool = require("../config/dbMysql");
 
 /**
- * ENDPOINT 1: Menerima data dari Google Sheet dan menyimpan ke PostgreSQL
+ * ENDPOINT: Menerima data alamat dan menyimpan ke tabel 'data_layanan' di MySQL.
  * Metode: POST
- * URL: /api/save-to-postgres
+ * URL: /api/save-addresses-to-mysql 
  */
-router.post("/save-to-postgres", async (req, res) => {
-  const data = req.body; // Data diharapkan berupa array of objects
+router.post("/save-addresses-to-mysql", async (req, res) => {
+  const data = req.body;
 
   if (!Array.isArray(data) || data.length === 0) {
     return res.status(400).json({ success: false, message: "Data tidak valid." });
   }
 
-  const client = await postgresPool.connect();
+  // Menggunakan koneksi dari MySQL Pool
+  const conn = await mysqlPool.getConnection(); 
   try {
-    await client.query('BEGIN'); // Mulai transaksi
+    await conn.beginTransaction();
+    
     let processedCount = 0;
     for (const row of data) {
       if (row.service_no) {
+        // ==> PERBAIKAN UTAMA DI SINI <==
+        // Menggunakan sintaks SQL yang benar untuk MySQL
         const query = `
-          INSERT INTO data_layanan (service_no, alamat) VALUES ($1, $2)
-          ON CONFLICT (service_no) DO UPDATE SET alamat = EXCLUDED.alamat;
+          INSERT INTO data_layanan (service_no, alamat) VALUES (?, ?)
+          ON DUPLICATE KEY UPDATE alamat = VALUES(alamat);
         `;
-        await client.query(query, [row.service_no, row.alamat || null]);
+        // Menggunakan placeholder '?' yang sesuai dengan library mysql2
+        await conn.query(query, [row.service_no, row.alamat || null]);
         processedCount++;
       }
     }
-    await client.query('COMMIT'); // Simpan semua perubahan
-    res.status(201).json({ success: true, message: `${processedCount} baris data berhasil disimpan ke PostgreSQL.` });
+    
+    await conn.commit();
+    res.status(201).json({ 
+      success: true, 
+      message: `${processedCount} baris data alamat berhasil disimpan ke tabel data_layanan di MySQL.` 
+    });
+
   } catch (err) {
-    await client.query('ROLLBACK'); // Batalkan jika ada error
-    console.error("Gagal menyimpan ke PostgreSQL:", err);
+    await conn.rollback();
+    console.error("Gagal menyimpan ke data_layanan MySQL:", err);
     res.status(500).json({ success: false, error: err.message });
   } finally {
-    client.release();
+    conn.release();
   }
 });
 
