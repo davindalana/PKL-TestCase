@@ -4,185 +4,6 @@ import "./LihatWO.css";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
-const sektorWorkzoneKorlapMap = [
-  {
-    sektor: "MLG 1",
-    workzone: "BLB",
-    korlaps: ["@nicosuryanata", "@hndika", "@triyuni75", "@Endrasakti"],
-  },
-  {
-    sektor: "MLG 1",
-    workzone: "KLJ",
-    korlaps: ["@rolimartin", "@JackSpaarroww", "@firdausmulia", "@YantiMohadi"],
-  },
-  {
-    sektor: "MLG 2",
-    workzone: "SGS",
-    korlaps: [
-      "@iqbal_albana",
-      "@merin97",
-      "@RizkyAHermawan",
-      "@Choliz87",
-      "@agungspoetra",
-    ],
-  },
-  {
-    sektor: "MLG 2",
-    workzone: "PKS",
-    korlaps: [
-      "@iqbal_albana",
-      "@merin97",
-      "@RizkyAHermawan",
-      "@Choliz87",
-      "@agungspoetra",
-    ],
-  },
-  {
-    sektor: "MLG 2",
-    workzone: "LWG",
-    korlaps: [
-      "@iqbal_albana",
-      "@merin97",
-      "@RizkyAHermawan",
-      "@Choliz87",
-      "@agungspoetra",
-    ],
-  },
-  {
-    sektor: "MLG 2",
-    workzone: "TMP",
-    korlaps: [
-      "@iqbal_albana",
-      "@merin97",
-      "@RizkyAHermawan",
-      "@Choliz87",
-      "@agungspoetra",
-    ],
-  },
-  {
-    sektor: "MLG 2",
-    workzone: "SWJ",
-    korlaps: [
-      "@iqbal_albana",
-      "@merin97",
-      "@RizkyAHermawan",
-      "@Choliz87",
-      "@agungspoetra",
-    ],
-  },
-  {
-    sektor: "MLG 2",
-    workzone: "BRG",
-    korlaps: [
-      "@iqbal_albana",
-      "@merin97",
-      "@RizkyAHermawan",
-      "@Choliz87",
-      "@agungspoetra",
-    ],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "MLG",
-    korlaps: ["@huliaihzlq", "@Rizkymaulana_06", "@Kikuch", "@anovitass"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "GDG",
-    korlaps: ["@azislutfi", "@anindya_putra", "@alibassss", "@bimalaksana90"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "KEP",
-    korlaps: ["@azislutfi", "@anindya_putra", "@alibassss", "@bimalaksana90"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "SBP",
-    korlaps: ["@azislutfi", "@anindya_putra", "@alibassss", "@bimalaksana90"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "GKW",
-    korlaps: ["@azislutfi", "@anindya_putra", "@alibassss", "@bimalaksana90"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "DNO",
-    korlaps: ["@azislutfi", "@anindya_putra", "@alibassss", "@bimalaksana90"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "PGK",
-    korlaps: ["@azislutfi", "@anindya_putra", "@alibassss", "@bimalaksana90"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "TUR",
-    korlaps: ["@mochammadmulya", "@Penjozasmara", "@ipunklutfy", "@Gotam27"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "GDI",
-    korlaps: ["@mochammadmulya", "@Penjozasmara", "@ipunklutfy", "@Gotam27"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "BNR",
-    korlaps: ["@mochammadmulya", "@Penjozasmara", "@ipunklutfy", "@Gotam27"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "DPT",
-    korlaps: ["@mochammadmulya", "@Penjozasmara", "@ipunklutfy", "@Gotam27"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "SBM",
-    korlaps: ["@mochammadmulya", "@Penjozasmara", "@ipunklutfy", "@Gotam27"],
-  },
-  {
-    sektor: "MLG 3",
-    workzone: "APG",
-    korlaps: ["@mochammadmulya", "@Penjozasmara", "@ipunklutfy", "@Gotam27"],
-  },
-  {
-    sektor: "MLG 4",
-    workzone: "BTU",
-    korlaps: ["@arishere", "@Flyco", "@aanksueb", "@diditdwif", "@athunk05"],
-  },
-  {
-    sektor: "MLG 4",
-    workzone: "NTG",
-    korlaps: ["@arishere", "@Flyco", "@aanksueb", "@diditdwif", "@athunk05"],
-  },
-  {
-    sektor: "MLG 4",
-    workzone: "KPO",
-    korlaps: ["@arishere", "@Flyco", "@aanksueb", "@diditdwif", "@athunk05"],
-  },
-];
-
-const getSektorOptions = () =>
-  [...new Set(sektorWorkzoneKorlapMap.map((item) => item.sektor))].sort();
-
-const getWorkzonesForSektor = (sektor) =>
-  !sektor
-    ? []
-    : [
-        ...new Set(
-          sektorWorkzoneKorlapMap
-            .filter((m) => m.sektor === sektor)
-            .map((m) => m.workzone)
-        ),
-      ];
-
-const getKorlapsForWorkzone = (workzone) =>
-  sektorWorkzoneKorlapMap.find((m) => m.workzone === workzone)?.korlaps || [];
-
-const getSektorForWorkzone = (workzone) =>
-  sektorWorkzoneKorlapMap.find((m) => m.workzone === workzone)?.sektor || "";
-
 const getFormatText = (item) => `STO : ${item.workzone || "-"}
 NO. TIKET : ${item.incident || "-"}
 SERVICE NO : ${item.service_no || "-"}  ${item.service_type || ""}
@@ -376,6 +197,9 @@ const WorkOrderRow = memo(
     onCopy,
     allSektorOptions,
     statusOptions,
+    getSektorForWorkzone,
+    getWorkzonesForSektor,
+    getKorlapsForWorkzone,
   }) => {
     const effectiveSektor = item.sektor || getSektorForWorkzone(item.workzone);
 
@@ -388,7 +212,8 @@ const WorkOrderRow = memo(
         const newSektor = getSektorForWorkzone(value);
         updatedFields = { workzone: value, sektor: newSektor, korlap: "" };
       }
-      onUpdate(item.incident, updatedFields);
+      // **PERBAIKAN:** Mengirim seluruh `item` untuk menghindari stale state
+      onUpdate(item, updatedFields);
     };
 
     const workzoneRowOptions = useMemo(() => {
@@ -397,7 +222,7 @@ const WorkOrderRow = memo(
         options.unshift(item.workzone);
       }
       return options;
-    }, [effectiveSektor, item.workzone]);
+    }, [effectiveSektor, item.workzone, getWorkzonesForSektor]);
 
     const korlapRowOptions = useMemo(() => {
       const options = getKorlapsForWorkzone(item.workzone);
@@ -405,7 +230,7 @@ const WorkOrderRow = memo(
         options.unshift(item.korlap);
       }
       return options;
-    }, [item.workzone, item.korlap]);
+    }, [item.workzone, item.korlap, getKorlapsForWorkzone]);
 
     return (
       <tr className={isSelected ? "selected" : ""}>
@@ -513,7 +338,15 @@ const WorkOrderRow = memo(
   }
 );
 
-const EditModal = ({ item, onClose, onSave, allSektorOptions }) => {
+const EditModal = ({
+  item,
+  onClose,
+  onSave,
+  allSektorOptions,
+  getSektorForWorkzone,
+  getWorkzonesForSektor,
+  getKorlapsForWorkzone,
+}) => {
   const [editForm, setEditForm] = useState({ ...item });
 
   useEffect(() => {
@@ -523,7 +356,7 @@ const EditModal = ({ item, onClose, onSave, allSektorOptions }) => {
         sektor: getSektorForWorkzone(prev.workzone),
       }));
     }
-  }, [editForm.workzone, editForm.sektor]);
+  }, [editForm.workzone, editForm.sektor, getSektorForWorkzone]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -546,11 +379,11 @@ const EditModal = ({ item, onClose, onSave, allSektorOptions }) => {
   };
   const workzoneOptions = useMemo(
     () => getWorkzonesForSektor(editForm.sektor),
-    [editForm.sektor]
+    [editForm.sektor, getWorkzonesForSektor]
   );
   const korlapOptions = useMemo(
     () => getKorlapsForWorkzone(editForm.workzone),
-    [editForm.workzone]
+    [editForm.workzone, getKorlapsForWorkzone]
   );
 
   return (
@@ -647,8 +480,10 @@ const EditModal = ({ item, onClose, onSave, allSektorOptions }) => {
 
 const LihatWO = () => {
   const [woData, setWoData] = useState([]);
+  const [workzoneMap, setWorkzoneMap] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [formatIncident, setFormatIncident] = useState(null);
@@ -674,26 +509,78 @@ const LihatWO = () => {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
-        const response = await fetch(`${API_BASE_URL}/view-mysql`);
-        const result = await response.json();
+        const [woResponse, workzoneResponse] = await Promise.all([
+          fetch(`${API_BASE_URL}/view-mysql`),
+          fetch(`${API_BASE_URL}/workzones`),
+        ]);
+
+        if (!woResponse.ok || !workzoneResponse.ok) {
+          throw new Error(
+            `Gagal mengambil data. Status WO: ${woResponse.status}, Status Workzone: ${workzoneResponse.status}`
+          );
+        }
+
+        const woResult = await woResponse.json();
+        const workzoneData = await workzoneResponse.json();
+
         const unique = [];
         const seen = new Set();
-        (Array.isArray(result.data) ? result.data : []).forEach((item) => {
+        (Array.isArray(woResult.data) ? woResult.data : []).forEach((item) => {
           if (item.incident && !seen.has(item.incident)) {
             seen.add(item.incident);
             unique.push(item);
           }
         });
         setWoData(unique);
-      } catch (error) {
-        console.error("Gagal mengambil data:", error);
+        setWorkzoneMap(Array.isArray(workzoneData) ? workzoneData : []);
+      } catch (err) {
+        console.error("Gagal mengambil data:", err);
+        setError(err.message);
         setWoData([]);
+        setWorkzoneMap([]);
       }
       setIsLoading(false);
     };
     fetchData();
   }, []);
+
+  const getSektorForWorkzone = useCallback(
+    (workzone) => {
+      if (!workzone) return "";
+      const normalizedWorkzone = workzone.toLowerCase().trim();
+      const match = workzoneMap.find(
+        (m) => m.workzone?.toLowerCase().trim() === normalizedWorkzone
+      );
+      return match?.sektor || "";
+    },
+    [workzoneMap]
+  );
+
+  const getKorlapsForWorkzone = useCallback(
+    (workzone) => {
+      if (!workzone) return [];
+      const normalizedWorkzone = workzone.toLowerCase().trim();
+      const match = workzoneMap.find(
+        (m) => m.workzone?.toLowerCase().trim() === normalizedWorkzone
+      );
+      return match?.korlaps || [];
+    },
+    [workzoneMap]
+  );
+
+  const getWorkzonesForSektor = useCallback(
+    (sektor) => {
+      if (!sektor) return [];
+      return [
+        ...new Set(
+          workzoneMap.filter((m) => m.sektor === sektor).map((m) => m.workzone)
+        ),
+      ];
+    },
+    [workzoneMap]
+  );
 
   const allKeys = useMemo(() => {
     const keys = new Set(woData.flatMap((obj) => Object.keys(obj)));
@@ -717,13 +604,19 @@ const LihatWO = () => {
   } = useMemo(() => {
     const statusSet = new Set(woData.map((d) => d.status).filter(Boolean));
     if (!statusSet.has("NEW")) statusSet.add("NEW");
-    const allSektors = getSektorOptions();
+
+    const allSektors = [
+      ...new Set(workzoneMap.map((item) => item.sektor)),
+    ].sort();
+
     const availableWorkzones = filter.sektor
       ? getWorkzonesForSektor(filter.sektor)
-      : [...new Set(sektorWorkzoneKorlapMap.map((i) => i.workzone))];
+      : [...new Set(workzoneMap.map((i) => i.workzone))];
+
     const availableKorlaps = filter.workzone
       ? getKorlapsForWorkzone(filter.workzone)
       : [];
+
     return {
       statusOptions: [
         "NEW",
@@ -736,7 +629,14 @@ const LihatWO = () => {
       workzoneFilterOptions: availableWorkzones.sort(),
       korlapFilterOptions: availableKorlaps.sort(),
     };
-  }, [woData, filter.sektor, filter.workzone]);
+  }, [
+    woData,
+    filter.sektor,
+    filter.workzone,
+    workzoneMap,
+    getWorkzonesForSektor,
+    getKorlapsForWorkzone,
+  ]);
 
   const sortedData = useMemo(() => {
     const filtered = woData.filter((item) => {
@@ -765,19 +665,27 @@ const LihatWO = () => {
       if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [debouncedSearchTerm, woData, filter, visibleKeys, sortConfig]);
+  }, [
+    debouncedSearchTerm,
+    woData,
+    filter,
+    visibleKeys,
+    sortConfig,
+    getSektorForWorkzone,
+  ]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [sortedData.length]);
 
-  const requestSort = (key) => {
-    const direction =
-      sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
-    setSortConfig({ key, direction });
-  };
+  const requestSort = useCallback((key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  }, []);
 
-  const handleFilterChange = (field, value) => {
+  const handleFilterChange = useCallback((field, value) => {
     setFilter((prev) => {
       const newFilter = { ...prev, [field]: value };
       if (field === "sektor") {
@@ -789,59 +697,62 @@ const LihatWO = () => {
       }
       return newFilter;
     });
-  };
+  }, []);
 
-  const handleUpdateRow = useCallback(
-    async (incidentId, updatedFields) => {
-      const fieldKeys = Object.keys(updatedFields);
-      const updatingKeys = fieldKeys.reduce((acc, key) => {
-        acc[incidentId + key] = true;
-        return acc;
-      }, {});
-      setUpdatingStatus((p) => ({ ...p, ...updatingKeys }));
-      try {
-        const currentItem = woData.find((d) => d.incident === incidentId);
-        await fetch(`${API_BASE_URL}/work-orders/${incidentId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...currentItem, ...updatedFields }),
-        });
-        setWoData((prev) =>
-          prev.map((d) =>
-            d.incident === incidentId ? { ...d, ...updatedFields } : d
-          )
-        );
-      } catch (error) {
-        console.error("Gagal update data:", error);
-        alert("Gagal memperbarui data.");
-      } finally {
-        const finalUpdatingKeys = fieldKeys.reduce((acc, key) => {
-          acc[incidentId + key] = false;
-          return acc;
-        }, {});
-        setUpdatingStatus((p) => ({ ...p, ...finalUpdatingKeys }));
-      }
-    },
-    [woData]
-  );
+  const handleUpdateRow = useCallback(async (item, updatedFields) => {
+    const incidentId = item.incident;
+    const fieldKeys = Object.keys(updatedFields);
 
-  const handleEditSave = async (updatedItem) => {
+    const updatingKeys = fieldKeys.reduce((acc, key) => {
+      acc[incidentId + key] = true;
+      return acc;
+    }, {});
+    setUpdatingStatus((p) => ({ ...p, ...updatingKeys }));
+
     try {
-      await fetch(`${API_BASE_URL}/work-orders/${editItem.incident}`, {
+      await fetch(`${API_BASE_URL}/work-orders/${incidentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedItem),
+        body: JSON.stringify({ ...item, ...updatedFields }),
       });
-      setWoData((prev) =>
-        prev.map((d) => (d.incident === editItem.incident ? updatedItem : d))
-      );
-      setEditItem(null);
-    } catch {
-      alert("Gagal update data");
-    }
-  };
 
-  const handleDelete = async (incident) => {
+      setWoData((prev) =>
+        prev.map((d) =>
+          d.incident === incidentId ? { ...d, ...updatedFields } : d
+        )
+      );
+    } catch (error) {
+      console.error("Gagal update data:", error);
+      alert("Gagal memperbarui data.");
+    } finally {
+      const finalUpdatingKeys = fieldKeys.reduce((acc, key) => {
+        acc[incidentId + key] = false;
+        return acc;
+      }, {});
+      setUpdatingStatus((p) => ({ ...p, ...finalUpdatingKeys }));
+    }
+  }, []);
+
+  const handleEditSave = useCallback(
+    async (updatedItem) => {
+      try {
+        await fetch(`${API_BASE_URL}/work-orders/${editItem.incident}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedItem),
+        });
+        setWoData((prev) =>
+          prev.map((d) => (d.incident === editItem.incident ? updatedItem : d))
+        );
+        setEditItem(null);
+      } catch {
+        alert("Gagal update data");
+      }
+    },
+    [editItem]
+  );
+
+  const handleDelete = useCallback(async (incident) => {
     if (window.confirm("Yakin ingin menghapus data ini?")) {
       try {
         await fetch(`${API_BASE_URL}/work-orders/${incident}`, {
@@ -853,9 +764,9 @@ const LihatWO = () => {
         alert("Gagal menghapus data.");
       }
     }
-  };
+  }, []);
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = useCallback(() => {
     if (
       selectedItems.length > 0 &&
       window.confirm(
@@ -867,38 +778,51 @@ const LihatWO = () => {
       );
       setSelectedItems([]);
     }
-  };
+  }, [selectedItems]);
 
-  const handleCopy = async (item) => {
+  const handleCopy = useCallback(async (item) => {
     try {
       await navigator.clipboard.writeText(getFormatText(item));
       alert("Format berhasil disalin!");
     } catch (err) {
       console.error("Gagal menyalin teks:", err);
     }
-  };
+  }, []);
 
-  const handleSelectAll = (e) => {
-    const currentPageIds = getCurrentPageData().map((item) => item.incident);
-    if (e.target.checked) {
-      setSelectedItems((prev) => [...new Set([...prev, ...currentPageIds])]);
-    } else {
-      setSelectedItems((prev) =>
-        prev.filter((id) => !currentPageIds.includes(id))
-      );
-    }
-  };
+  const handleSelectItem = useCallback((id) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  }, []);
 
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-  const getCurrentPageData = () => {
+  const getCurrentPageData = useCallback(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return sortedData.slice(startIndex, startIndex + itemsPerPage);
-  };
+  }, [sortedData, currentPage, itemsPerPage]);
 
   const dataToShow = getCurrentPageData();
-  const isAllOnPageSelected =
-    dataToShow.length > 0 &&
-    dataToShow.every((item) => selectedItems.includes(item.incident));
+
+  const isAllOnPageSelected = useMemo(
+    () =>
+      dataToShow.length > 0 &&
+      dataToShow.every((item) => selectedItems.includes(item.incident)),
+    [dataToShow, selectedItems]
+  );
+
+  const handleSelectAll = useCallback(
+    (e) => {
+      const currentPageIds = dataToShow.map((item) => item.incident);
+      if (e.target.checked) {
+        setSelectedItems((prev) => [...new Set([...prev, ...currentPageIds])]);
+      } else {
+        setSelectedItems((prev) =>
+          prev.filter((id) => !currentPageIds.includes(id))
+        );
+      }
+    },
+    [dataToShow]
+  );
 
   const handleApplyColumnChanges = () => {
     setVisibleKeys(draftVisibleKeys);
@@ -917,6 +841,22 @@ const LihatWO = () => {
     return (
       <div className="loading-container">
         <div className="loading-spinner">⏳</div> <p>Memuat data...</p>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="lihat-wo-container">
+        <div className="error-container">
+          <h2> Gagal Memuat Data 🔌</h2>
+          <p>Terjadi kesalahan saat mengambil data dari server. </p>
+          <pre className="error-message">{error}</pre>
+          <p>
+            <strong>Pastikan server backend Anda berjalan</strong> dan alamat
+            API sudah benar. Silakan cek tab Console di Developer Tools (F12)
+            untuk detail lebih lanjut.
+          </p>
+        </div>
       </div>
     );
 
@@ -1115,13 +1055,7 @@ const LihatWO = () => {
                   allKeys={allKeys}
                   visibleKeys={visibleKeys}
                   isSelected={selectedItems.includes(item.incident)}
-                  onSelect={(id) =>
-                    setSelectedItems((prev) =>
-                      prev.includes(id)
-                        ? prev.filter((i) => i !== id)
-                        : [...prev, id]
-                    )
-                  }
+                  onSelect={handleSelectItem}
                   onUpdate={handleUpdateRow}
                   updatingStatus={updatingStatus}
                   onEdit={setEditItem}
@@ -1130,6 +1064,9 @@ const LihatWO = () => {
                   onCopy={handleCopy}
                   allSektorOptions={sektorOptions}
                   statusOptions={statusOptions}
+                  getSektorForWorkzone={getSektorForWorkzone}
+                  getWorkzonesForSektor={getWorkzonesForSektor}
+                  getKorlapsForWorkzone={getKorlapsForWorkzone}
                 />
               ))
             )}
@@ -1187,6 +1124,9 @@ const LihatWO = () => {
           onClose={() => setEditItem(null)}
           onSave={handleEditSave}
           allSektorOptions={sektorOptions}
+          getSektorForWorkzone={getSektorForWorkzone}
+          getWorkzonesForSektor={getWorkzonesForSektor}
+          getKorlapsForWorkzone={getKorlapsForWorkzone}
         />
       )}
     </div>

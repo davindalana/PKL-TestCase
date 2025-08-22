@@ -501,6 +501,8 @@
   transform: translateY(-50%);
   font-size: 0.7rem;
 }
+
+/* KODE KUNCI ADA DI SINI */
 .dropdown-menu-portal {
   background-color: #fff;
   border: 1px solid #e2e8f0;
@@ -508,10 +510,13 @@
   box-shadow: 0 4px 12px rgba(44, 62, 80, 0.1);
   z-index: 1100;
   margin-top: 4px;
-  height: 250px;
-  overflow-y: scroll;
+  /* INI HANYA BATAS TINGGI MAKSIMAL. Jika isi lebih pendek, tinggi kotak akan menyesuaikan otomatis. */
+  max-height: 320px;
+  /* Scrollbar hanya akan muncul JIKA isi lebih tinggi dari max-height. */
+  overflow-y: auto;
   min-width: 150px;
 }
+
 .dropdown-item {
   padding: 0.6rem 0.8rem;
   cursor: pointer;
@@ -527,4 +532,30 @@
   background-color: #667eea;
   color: #fff;
   font-weight: 600;
+}
+.error-container {
+  padding: 2rem;
+  text-align: center;
+  background-color: #fff5f5;
+  border: 1px solid #fc8181;
+  border-radius: 12px;
+  margin: 2rem;
+}
+
+.error-container h2 {
+  color: #c53030;
+  margin-top: 0;
+}
+
+.error-message {
+  background-color: #fed7d7;
+  color: #742a2a;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: monospace;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
