@@ -284,6 +284,7 @@ router.delete("/work-orders/:incident", async (req, res) => {
   }
 });
 
+
 /**
  * ENDPOINT: Menerima & Sinkronisasi Massal Work Order
  * Metode: POST
@@ -365,5 +366,25 @@ router.post("/mypost", async (req, res) => {
   }
 });
 
+/**
+ * ENDPOINT: Menerima data workzones
+ * Metode: GET
+ * URL: /api/workzones
+ */
+router.get("/workzones", async (req, res) => {
+  try {
+    // Gunakan mysqlPool dan format query untuk mysql2
+    const [rows] = await mysqlPool.query( // <-- Ganti menjadi mysqlPool
+      "SELECT DISTINCT workzone FROM workzone_details ORDER BY workzone ASC"
+    );
+    
+    // Kirim sebagai array ["BLB", "BTU", "GDG", ...]
+    res.json(rows.map(w => w.workzone));
+
+  } catch (err) {
+    console.error("Gagal mengambil daftar workzone:", err);
+    res.status(500).json({ error: "Terjadi kesalahan pada server" });
+  }
+});
 
 module.exports = router;
