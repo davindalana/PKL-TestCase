@@ -4,6 +4,44 @@ const postgresPool = require("../config/dbPostgres");
 const mysqlPool = require("../config/dbMysql");
 
 /**
+ * ENDPOINT 1: Menerima data dari Google Sheet dan menyimpan ke PostgreSQL
+ * Metode: POST
+ * URL: /api/save-to-postgres
+ */
+router.post("/save-to-postgres", async (req, res) => {
+  const data = req.body; // Data diharapkan berupa array of objects
+
+  if (!Array.isArray(data) || data.length === 0) {
+    return res.status(400).json({ success: false, message: "Data tidak valid." });
+  }
+
+  const client = await postgresPool.connect();
+  try {
+    await client.query('BEGIN'); // Mulai transaksi
+    let processedCount = 0;
+    for (const row of data) {
+      if (row.service_no) {
+        const query = `
+          INSERT INTO data_layanan (service_no, alamat) VALUES ($1, $2)
+          ON CONFLICT (service_no) DO UPDATE SET alamat = EXCLUDED.alamat;
+        `;
+        await client.query(query, [row.service_no, row.alamat || null]);
+        processedCount++;
+      }
+    }
+    await client.query('COMMIT'); // Simpan semua perubahan
+    res.status(201).json({ success: true, message: `${processedCount} baris data berhasil disimpan ke PostgreSQL.` });
+  } catch (err) {
+    await client.query('ROLLBACK'); // Batalkan jika ada error
+    console.error("Gagal menyimpan ke PostgreSQL:", err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+
+/**
  * ENDPOINT: Menerima data alamat dan menyimpan ke tabel 'data_layanan' di MySQL.
  * Metode: POST
  * URL: /api/save-addresses-to-mysql 
@@ -393,6 +431,40 @@ router.get("/workzones", async (req, res) => {
 
   } catch (err) {
     console.error("Gagal mengambil daftar workzone:", err);
+    res.status(500).json({ error: "Terjadi kesalahan pada server" });
+  }
+});
+
+
+/**
+ * ENDPOINT BARU: Mengambil seluruh pemetaan Workzone, Korlap, dan Sektor
+ * Metode: GET
+ * URL: /api/workzone-map
+ */
+router.get("/workzone-map", async (req, res) => {
+  try {
+    const [rows] = await mysqlPool.query(
+      "SELECT workzone, korlap_username, sektor FROM workzone_details ORDER BY workzone, korlap_username"
+    );
+
+    // Proses data mentah menjadi format yang mudah digunakan di frontend
+    const map = rows.reduce((acc, { workzone, korlap_username, sektor }) => {
+      if (!acc[workzone]) {
+        acc[workzone] = {
+          workzone: workzone,
+          sektor: sektor,
+          korlaps: [],
+        };
+      }
+      acc[workzone].korlaps.push(korlap_username);
+      return acc;
+    }, {});
+
+    // Kirim sebagai array objek
+    res.json(Object.values(map));
+
+  } catch (err) {
+    console.error("Gagal mengambil pemetaan workzone:", err);
     res.status(500).json({ error: "Terjadi kesalahan pada server" });
   }
 });

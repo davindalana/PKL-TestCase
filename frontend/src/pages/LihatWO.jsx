@@ -189,7 +189,7 @@ const WorkOrderRow = memo(
     visibleKeys,
     isSelected,
     onSelect,
-    onUpdate,
+    onUpdate, // <--- onUpdate akan kita perbaiki cara memanggilnya
     updatingStatus,
     onEdit,
     onDelete,
@@ -201,8 +201,6 @@ const WorkOrderRow = memo(
     getWorkzonesForSektor,
     getKorlapsForWorkzone,
   }) => {
-    const effectiveSektor = item.sektor || getSektorForWorkzone(item.workzone);
-
     const handleDropdownChange = (key, value) => {
       let updatedFields = { [key]: value };
       if (key === "sektor") {
@@ -212,25 +210,14 @@ const WorkOrderRow = memo(
         const newSektor = getSektorForWorkzone(value);
         updatedFields = { workzone: value, sektor: newSektor, korlap: "" };
       }
-      // **PERBAIKAN:** Mengirim seluruh `item` untuk menghindari stale state
+      
+      // ==> PERBAIKAN 1: Kirim seluruh item dan field yang diupdate <==
       onUpdate(item, updatedFields);
     };
 
-    const workzoneRowOptions = useMemo(() => {
-      const options = getWorkzonesForSektor(effectiveSektor);
-      if (item.workzone && !options.includes(item.workzone)) {
-        options.unshift(item.workzone);
-      }
-      return options;
-    }, [effectiveSektor, item.workzone, getWorkzonesForSektor]);
-
-    const korlapRowOptions = useMemo(() => {
-      const options = getKorlapsForWorkzone(item.workzone);
-      if (item.korlap && !options.includes(item.korlap)) {
-        options.unshift(item.korlap);
-      }
-      return options;
-    }, [item.workzone, item.korlap, getKorlapsForWorkzone]);
+    const effectiveSektor = item.sektor || getSektorForWorkzone(item.workzone);
+    const workzoneRowOptions = useMemo(() => getWorkzonesForSektor(effectiveSektor), [effectiveSektor, getWorkzonesForSektor]);
+    const korlapRowOptions = useMemo(() => getKorlapsForWorkzone(item.workzone), [item.workzone, getKorlapsForWorkzone]);
 
     return (
       <tr className={isSelected ? "selected" : ""}>
@@ -513,7 +500,7 @@ const LihatWO = () => {
       try {
         const [woResponse, workzoneResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/view-mysql`),
-          fetch(`${API_BASE_URL}/workzones`),
+          fetch(`${API_BASE_URL}/workzone-map`),
         ]);
 
         if (!woResponse.ok || !workzoneResponse.ok) {
@@ -699,39 +686,41 @@ const LihatWO = () => {
     });
   }, []);
 
-  const handleUpdateRow = useCallback(async (item, updatedFields) => {
-    const incidentId = item.incident;
+  // ==> PERBAIKAN 2: Fungsi handleUpdateRow yang baru <==
+  const handleUpdateRow = useCallback(async (originalItem, updatedFields) => {
+    const incidentId = originalItem.incident;
     const fieldKeys = Object.keys(updatedFields);
 
-    const updatingKeys = fieldKeys.reduce((acc, key) => {
-      acc[incidentId + key] = true;
-      return acc;
-    }, {});
-    setUpdatingStatus((p) => ({ ...p, ...updatingKeys }));
+    // Gabungkan data asli dengan perubahan baru untuk dikirim ke backend
+    const dataToSend = { ...originalItem, ...updatedFields };
+
+    setUpdatingStatus((p) => ({ ...p, [incidentId]: true })); // Tampilkan loading untuk seluruh baris
 
     try {
-      await fetch(`${API_BASE_URL}/work-orders/${incidentId}`, {
+      const response = await fetch(`${API_BASE_URL}/work-orders/${incidentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...item, ...updatedFields }),
+        body: JSON.stringify(dataToSend), // Kirim data yang sudah digabung
       });
 
+      if (!response.ok) {
+        throw new Error("Gagal menyimpan perubahan ke server.");
+      }
+
+      // Update state lokal dengan data yang sudah digabung
       setWoData((prev) =>
         prev.map((d) =>
-          d.incident === incidentId ? { ...d, ...updatedFields } : d
+          d.incident === incidentId ? dataToSend : d
         )
       );
     } catch (error) {
       console.error("Gagal update data:", error);
-      alert("Gagal memperbarui data.");
+      alert("Gagal memperbarui data. Data akan dikembalikan ke kondisi semula.");
+      // Jika gagal, state tidak diubah, UI akan kembali ke data `woData` yang lama
     } finally {
-      const finalUpdatingKeys = fieldKeys.reduce((acc, key) => {
-        acc[incidentId + key] = false;
-        return acc;
-      }, {});
-      setUpdatingStatus((p) => ({ ...p, ...finalUpdatingKeys }));
+      setUpdatingStatus((p) => ({ ...p, [incidentId]: false })); // Hilangkan loading
     }
-  }, []);
+  }, []); // Dependensi kosong karena semua data didapat dari argumen
 
   const handleEditSave = useCallback(
     async (updatedItem) => {
