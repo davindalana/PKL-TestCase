@@ -2,10 +2,8 @@ import { useState, useEffect, useMemo, useCallback, memo, useRef } from "react";
 import { createPortal } from "react-dom";
 import "./LihatWO.css";
 
-// KONSTANTA
 const API_BASE_URL = "http://localhost:3000/api";
 
-// DATA MAPPING (SUMBER UTAMA DROPDOWN)
 const sektorWorkzoneKorlapMap = [
   {
     sektor: "MLG 1",
@@ -165,9 +163,9 @@ const sektorWorkzoneKorlapMap = [
   },
 ];
 
-// FUNGSI HELPERS
 const getSektorOptions = () =>
   [...new Set(sektorWorkzoneKorlapMap.map((item) => item.sektor))].sort();
+
 const getWorkzonesForSektor = (sektor) =>
   !sektor
     ? []
@@ -178,8 +176,10 @@ const getWorkzonesForSektor = (sektor) =>
             .map((m) => m.workzone)
         ),
       ];
+
 const getKorlapsForWorkzone = (workzone) =>
   sektorWorkzoneKorlapMap.find((m) => m.workzone === workzone)?.korlaps || [];
+
 const getSektorForWorkzone = (workzone) =>
   sektorWorkzoneKorlapMap.find((m) => m.workzone === workzone)?.sektor || "";
 
@@ -197,7 +197,6 @@ REPORTED DATE : ${item.reported_date || "-"}
 BOOKING DATE : ${item.booking_date || "-"}
 `;
 
-// FUNGSI UNTUK LOCALSTORAGE
 const getInitialVisibleKeys = (allKeys) => {
   try {
     const saved = localStorage.getItem("wo_visible_columns");
@@ -216,9 +215,17 @@ const getInitialVisibleKeys = (allKeys) => {
   return new Set(allKeys.filter((key) => initial.has(key)));
 };
 
-// ==========================================================
-// KOMPONEN DROPDOWN KUSTOM (DENGAN REACT PORTAL & SCROLL LISTENER)
-// ==========================================================
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 const CustomDropdown = ({
   options,
   value,
@@ -228,59 +235,61 @@ const CustomDropdown = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState(null);
-  const dropdownRef = useRef(null); // Ref untuk tombol
-  const menuRef = useRef(null); // Ref untuk menu di portal
+  const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
 
   const handleSelect = (optionValue) => {
     onChange(optionValue);
     setIsOpen(false);
   };
 
-  // Fungsi untuk mengupdate posisi menu dropdown
   const updatePosition = useCallback(() => {
     if (!dropdownRef.current) return;
     const rect = dropdownRef.current.getBoundingClientRect();
     setMenuPosition({
-      top: rect.bottom + window.scrollY,
-      left: rect.left + window.scrollX,
+      top: rect.bottom,
+      left: rect.left,
       width: rect.width,
     });
   }, []);
 
-  // Buka/tutup dropdown
   const toggleDropdown = useCallback(() => {
     if (disabled) return;
     const isOpening = !isOpen;
     setIsOpen(isOpening);
     if (isOpening) {
-      updatePosition(); // Set posisi saat pertama kali buka
+      updatePosition();
     }
   }, [isOpen, disabled, updatePosition]);
 
-  // Effect untuk mengupdate posisi menu saat window atau tabel di-scroll
   useEffect(() => {
     if (!isOpen) return;
-
     const tableContainer = dropdownRef.current.closest(".table-container");
+    const listeners = [
+      {
+        target: window,
+        event: "scroll",
+        handler: updatePosition,
+        options: true,
+      },
+      { target: window, event: "resize", handler: updatePosition },
+      { target: tableContainer, event: "scroll", handler: updatePosition },
+    ];
 
-    // Tambahkan semua listener
-    window.addEventListener("scroll", updatePosition, true);
-    window.addEventListener("resize", updatePosition);
-    if (tableContainer) {
-      tableContainer.addEventListener("scroll", updatePosition);
-    }
+    listeners.forEach(
+      (l) =>
+        l.target && l.target.addEventListener(l.event, l.handler, l.options)
+    );
 
-    // Cleanup listeners
     return () => {
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
-      if (tableContainer) {
-        tableContainer.removeEventListener("scroll", updatePosition);
-      }
+      listeners.forEach(
+        (l) =>
+          l.target &&
+          l.target.removeEventListener(l.event, l.handler, l.options)
+      );
     };
   }, [isOpen, updatePosition]);
 
-  // Effect untuk menutup dropdown saat klik di luar
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -316,9 +325,10 @@ const CustomDropdown = ({
         menuPosition &&
         createPortal(
           <div
-            ref={menuRef} // Lampirkan ref ke menu
+            ref={menuRef}
             className="dropdown-menu-portal"
             style={{
+              position: "fixed",
               top: `${menuPosition.top}px`,
               left: `${menuPosition.left}px`,
               width: `${menuPosition.width}px`,
@@ -345,9 +355,6 @@ const CustomDropdown = ({
   );
 };
 
-// ==========================================================
-// SUB-KOMPONEN
-// ==========================================================
 const SortIcon = ({ direction }) => (
   <span className="sort-icon">
     {direction === "asc" ? "🔼" : direction === "desc" ? "🔽" : "↕️"}
@@ -439,7 +446,6 @@ const WorkOrderRow = memo(
           .filter((key) => visibleKeys.has(key))
           .map((key) => {
             const isUpdating = updatingStatus[item.incident + key];
-
             if (key === "status") {
               return (
                 <td key={key} className="interactive-cell">
@@ -639,9 +645,6 @@ const EditModal = ({ item, onClose, onSave, allSektorOptions }) => {
   );
 };
 
-// ==========================================================
-// KOMPONEN UTAMA
-// ==========================================================
 const LihatWO = () => {
   const [woData, setWoData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -666,6 +669,7 @@ const LihatWO = () => {
   const [visibleKeys, setVisibleKeys] = useState(new Set());
   const [draftVisibleKeys, setDraftVisibleKeys] = useState(new Set());
   const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -739,7 +743,9 @@ const LihatWO = () => {
       const searchMatch = Object.entries(item).some(
         ([key, value]) =>
           visibleKeys.has(key) &&
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
+          String(value)
+            .toLowerCase()
+            .includes(debouncedSearchTerm.toLowerCase())
       );
       const itemSektor = item.sektor || getSektorForWorkzone(item.workzone);
       return (
@@ -759,7 +765,7 @@ const LihatWO = () => {
       if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
-  }, [searchTerm, woData, filter, visibleKeys, sortConfig]);
+  }, [debouncedSearchTerm, woData, filter, visibleKeys, sortConfig]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -862,6 +868,7 @@ const LihatWO = () => {
       setSelectedItems([]);
     }
   };
+
   const handleCopy = async (item) => {
     try {
       await navigator.clipboard.writeText(getFormatText(item));
@@ -870,6 +877,7 @@ const LihatWO = () => {
       console.error("Gagal menyalin teks:", err);
     }
   };
+
   const handleSelectAll = (e) => {
     const currentPageIds = getCurrentPageData().map((item) => item.incident);
     if (e.target.checked) {
@@ -886,10 +894,12 @@ const LihatWO = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return sortedData.slice(startIndex, startIndex + itemsPerPage);
   };
+
   const dataToShow = getCurrentPageData();
   const isAllOnPageSelected =
     dataToShow.length > 0 &&
     dataToShow.every((item) => selectedItems.includes(item.incident));
+
   const handleApplyColumnChanges = () => {
     setVisibleKeys(draftVisibleKeys);
     try {
