@@ -12,7 +12,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use('/api', apiRoutes);
 
 app.get('/', (req, res) => {
-  res.send('Server sinkronisasi (Postgres -> MySQL) berjalan!');
+  res.send('Server sinkronisasi berjalan!');
 });
 
 app.listen(PORT, () => {

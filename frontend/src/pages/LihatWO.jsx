@@ -689,9 +689,6 @@ const LihatWO = () => {
   // ==> PERBAIKAN 2: Fungsi handleUpdateRow yang baru <==
   const handleUpdateRow = useCallback(async (originalItem, updatedFields) => {
     const incidentId = originalItem.incident;
-    const fieldKeys = Object.keys(updatedFields);
-
-    // Gabungkan data asli dengan perubahan baru untuk dikirim ke backend
     const dataToSend = { ...originalItem, ...updatedFields };
 
     setUpdatingStatus((p) => ({ ...p, [incidentId]: true })); // Tampilkan loading untuk seluruh baris
@@ -703,42 +700,56 @@ const LihatWO = () => {
         body: JSON.stringify(dataToSend), // Kirim data yang sudah digabung
       });
 
-      if (!response.ok) {
-        throw new Error("Gagal menyimpan perubahan ke server.");
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || "Gagal menyimpan perubahan ke server.");
       }
 
-      // Update state lokal dengan data yang sudah digabung
+      // ==> PERBAIKAN: Gunakan 'result.data' dari backend untuk update state <==
       setWoData((prev) =>
         prev.map((d) =>
-          d.incident === incidentId ? dataToSend : d
+          d.incident === incidentId ? result.data : d // Ganti data lama dengan data baru dari server
         )
       );
+
     } catch (error) {
       console.error("Gagal update data:", error);
-      alert("Gagal memperbarui data. Data akan dikembalikan ke kondisi semula.");
-      // Jika gagal, state tidak diubah, UI akan kembali ke data `woData` yang lama
+      alert("Gagal memperbarui data.");
     } finally {
       setUpdatingStatus((p) => ({ ...p, [incidentId]: false })); // Hilangkan loading
     }
   }, []); // Dependensi kosong karena semua data didapat dari argumen
 
+    // Ganti fungsi handleEditSave yang lama dengan yang ini
   const handleEditSave = useCallback(
     async (updatedItem) => {
       try {
-        await fetch(`${API_BASE_URL}/work-orders/${editItem.incident}`, {
+        const response = await fetch(`${API_BASE_URL}/work-orders/${editItem.incident}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedItem),
         });
-        setWoData((prev) =>
-          prev.map((d) => (d.incident === editItem.incident ? updatedItem : d))
-        );
+
+        const result = await response.json();
+
+        if (!result.success) {
+          // Jika backend mengirim pesan error, tampilkan
+          throw new Error(result.message || "Gagal menyimpan data ke server.");
+        }
+
+        // Tutup modal edit
         setEditItem(null);
-      } catch {
-        alert("Gagal update data");
+        alert("Data berhasil disimpan!"); // Beri notifikasi sebelum refresh
+
+        // ==> PERBAIKAN DI SINI: Paksa muat ulang halaman <==
+        window.location.reload();
+
+      } catch (error) {
+        alert("Error: " + error.message);
       }
     },
-    [editItem]
+    [editItem] // Dependency array tetap diisi agar editItem tidak basi
   );
 
   const handleDelete = useCallback(async (incident) => {
