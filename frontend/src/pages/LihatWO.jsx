@@ -189,12 +189,13 @@ const WorkOrderRow = memo(
     visibleKeys,
     isSelected,
     onSelect,
-    onUpdate, // <--- onUpdate akan kita perbaiki cara memanggilnya
+    onUpdate,
     updatingStatus,
     onEdit,
     onDelete,
     onFormat,
     onCopy,
+    onComplete,
     allSektorOptions,
     statusOptions,
     getSektorForWorkzone,
@@ -210,14 +211,19 @@ const WorkOrderRow = memo(
         const newSektor = getSektorForWorkzone(value);
         updatedFields = { workzone: value, sektor: newSektor, korlap: "" };
       }
-      
-      // ==> PERBAIKAN 1: Kirim seluruh item dan field yang diupdate <==
+
       onUpdate(item, updatedFields);
     };
 
     const effectiveSektor = item.sektor || getSektorForWorkzone(item.workzone);
-    const workzoneRowOptions = useMemo(() => getWorkzonesForSektor(effectiveSektor), [effectiveSektor, getWorkzonesForSektor]);
-    const korlapRowOptions = useMemo(() => getKorlapsForWorkzone(item.workzone), [item.workzone, getKorlapsForWorkzone]);
+    const workzoneRowOptions = useMemo(
+      () => getWorkzonesForSektor(effectiveSektor),
+      [effectiveSektor, getWorkzonesForSektor]
+    );
+    const korlapRowOptions = useMemo(
+      () => getKorlapsForWorkzone(item.workzone),
+      [item.workzone, getKorlapsForWorkzone]
+    );
 
     return (
       <tr className={isSelected ? "selected" : ""}>
@@ -252,6 +258,12 @@ const WorkOrderRow = memo(
             className="btn aksi-btn btn-danger"
           >
             Hapus
+          </button>
+          <button
+            onClick={() => onComplete(item.incident)}
+            className="btn aksi-btn btn-success"
+          >
+            Selesai
           </button>
         </td>
         {allKeys
@@ -686,70 +698,67 @@ const LihatWO = () => {
     });
   }, []);
 
-  // ==> PERBAIKAN 2: Fungsi handleUpdateRow yang baru <==
   const handleUpdateRow = useCallback(async (originalItem, updatedFields) => {
     const incidentId = originalItem.incident;
     const dataToSend = { ...originalItem, ...updatedFields };
 
-    setUpdatingStatus((p) => ({ ...p, [incidentId]: true })); // Tampilkan loading untuk seluruh baris
+    setUpdatingStatus((p) => ({ ...p, [incidentId]: true }));
 
     try {
-      const response = await fetch(`${API_BASE_URL}/work-orders/${incidentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dataToSend), // Kirim data yang sudah digabung
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/work-orders/${incidentId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataToSend),
+        }
+      );
 
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || "Gagal menyimpan perubahan ke server.");
+        throw new Error(
+          result.message || "Gagal menyimpan perubahan ke server."
+        );
       }
 
-      // ==> PERBAIKAN: Gunakan 'result.data' dari backend untuk update state <==
       setWoData((prev) =>
-        prev.map((d) =>
-          d.incident === incidentId ? result.data : d // Ganti data lama dengan data baru dari server
-        )
+        prev.map((d) => (d.incident === incidentId ? result.data : d))
       );
-
     } catch (error) {
       console.error("Gagal update data:", error);
       alert("Gagal memperbarui data.");
     } finally {
-      setUpdatingStatus((p) => ({ ...p, [incidentId]: false })); // Hilangkan loading
+      setUpdatingStatus((p) => ({ ...p, [incidentId]: false }));
     }
-  }, []); // Dependensi kosong karena semua data didapat dari argumen
+  }, []);
 
-    // Ganti fungsi handleEditSave yang lama dengan yang ini
   const handleEditSave = useCallback(
     async (updatedItem) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/work-orders/${editItem.incident}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedItem),
-        });
+        const response = await fetch(
+          `${API_BASE_URL}/work-orders/${editItem.incident}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedItem),
+          }
+        );
 
         const result = await response.json();
 
         if (!result.success) {
-          // Jika backend mengirim pesan error, tampilkan
           throw new Error(result.message || "Gagal menyimpan data ke server.");
         }
 
-        // Tutup modal edit
         setEditItem(null);
-        alert("Data berhasil disimpan!"); // Beri notifikasi sebelum refresh
-
-        // ==> PERBAIKAN DI SINI: Paksa muat ulang halaman <==
+        alert("Data berhasil disimpan!");
         window.location.reload();
-
       } catch (error) {
         alert("Error: " + error.message);
       }
     },
-    [editItem] // Dependency array tetap diisi agar editItem tidak basi
+    [editItem]
   );
 
   const handleDelete = useCallback(async (incident) => {
@@ -766,6 +775,34 @@ const LihatWO = () => {
     }
   }, []);
 
+  const handleCompleteTicket = useCallback(async (incident) => {
+    if (
+      window.confirm(
+        "Apakah Anda yakin ingin menyelesaikan tiket ini? Data akan dipindahkan ke laporan."
+      )
+    ) {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/work-orders/${incident}/complete`,
+          {
+            method: "POST",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Gagal menyelesaikan tiket di server.");
+        }
+
+        setWoData((prev) => prev.filter((item) => item.incident !== incident));
+        setSelectedItems((prev) => prev.filter((item) => item !== incident));
+        alert("Tiket berhasil diselesaikan dan dipindahkan ke laporan.");
+      } catch (err) {
+        console.error("Gagal menyelesaikan tiket:", err);
+        alert("Gagal menyelesaikan tiket. Cek konsol untuk detail.");
+      }
+    }
+  }, []);
+
   const handleBulkDelete = useCallback(() => {
     if (
       selectedItems.length > 0 &&
@@ -773,6 +810,7 @@ const LihatWO = () => {
         `Yakin ingin menghapus ${selectedItems.length} data terpilih?`
       )
     ) {
+      // Di dunia nyata, Anda akan mengirim permintaan API di sini
       setWoData((prev) =>
         prev.filter((item) => !selectedItems.includes(item.incident))
       );
@@ -853,8 +891,7 @@ const LihatWO = () => {
           <pre className="error-message">{error}</pre>
           <p>
             <strong>Pastikan server backend Anda berjalan</strong> dan alamat
-            API sudah benar. Silakan cek tab Console di Developer Tools (F12)
-            untuk detail lebih lanjut.
+            API sudah benar.
           </p>
         </div>
       </div>
@@ -1062,6 +1099,7 @@ const LihatWO = () => {
                   onDelete={handleDelete}
                   onFormat={setFormatIncident}
                   onCopy={handleCopy}
+                  onComplete={handleCompleteTicket}
                   allSektorOptions={sektorOptions}
                   statusOptions={statusOptions}
                   getSektorForWorkzone={getSektorForWorkzone}

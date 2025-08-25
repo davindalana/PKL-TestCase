@@ -1,12 +1,10 @@
 .lihat-wo-container {
-  max-width: 98vw;
-  margin: 2rem auto;
-  padding: 0 1rem;
-  background: #f9fafb;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
-  font-family: sans-serif;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
+
 .page-header h1 {
   text-align: center;
   color: #3b3663;
@@ -113,22 +111,17 @@
   font-size: 0.95rem;
   color: #2d3748;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
   background-repeat: no-repeat;
   background-size: 1.5em 1.5em;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .filter-item select:hover,
 .form-group select:hover {
   border-color: #cbd5e0;
 }
-.filter-item select:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-}
+
 .column-selector {
   background: #f7fafc;
   border: 1px solid #e2e8f0;
@@ -173,6 +166,8 @@
   border-radius: 14px;
   box-shadow: 0 4px 12px rgba(44, 62, 80, 0.07);
   background: #fff;
+  flex-grow: 1; /* Membuat tabel mengisi sisa ruang */
+  min-height: 0; /* Diperlukan untuk flexbox di Chrome */
 }
 .wo-table {
   width: 100%;
@@ -190,7 +185,7 @@
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
-  transition: background 0.2s;
+  transition: background-color 0.2s ease;
 }
 .wo-table th:hover {
   background: #5a67d8;
@@ -205,7 +200,7 @@
   border-bottom: 1px solid #e2e8f0;
   vertical-align: middle;
   background: #fff;
-  transition: background 0.2s;
+  transition: background-color 0.2s ease;
 }
 .wo-table tbody tr:nth-child(even) {
   background-color: #f8fafc;
@@ -225,7 +220,7 @@
 .aksi-cell {
   display: flex;
   gap: 0.5rem;
-  min-width: 320px;
+  min-width: 380px;
 }
 .data-cell.truncate {
   font-size: 0.9rem;
@@ -243,12 +238,12 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
   border: none;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   box-shadow: 0 1px 2px rgba(44, 62, 80, 0.04);
+  transition: all 0.2s ease;
 }
 .btn:disabled {
   opacity: 0.6;
@@ -293,6 +288,13 @@
 .btn-secondary:hover {
   background: #718096;
 }
+.btn-success {
+  background-color: #38a169;
+  color: white;
+}
+.btn-success:hover:not(:disabled) {
+  background-color: #2f855a;
+}
 .btn-outline {
   background-color: transparent;
   border: 1px solid #e2e8f0;
@@ -329,7 +331,7 @@
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease;
 }
 .pagination button:hover:not(:disabled) {
   background: #5a67d8;
@@ -418,9 +420,6 @@
   }
 }
 @media (max-width: 900px) {
-  .lihat-wo-container {
-    padding: 0 0.2rem;
-  }
   .table-controls {
     flex-direction: column;
     align-items: stretch;
@@ -485,15 +484,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.dropdown-toggle:hover:not(:disabled) {
-  border-color: #cbd5e0;
-}
-.dropdown-toggle:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-}
+
 .dropdown-arrow {
   position: absolute;
   right: 0.5rem;
@@ -502,7 +495,6 @@
   font-size: 0.7rem;
 }
 
-/* KODE KUNCI ADA DI SINI */
 .dropdown-menu-portal {
   background-color: #fff;
   border: 1px solid #e2e8f0;
@@ -510,9 +502,7 @@
   box-shadow: 0 4px 12px rgba(44, 62, 80, 0.1);
   z-index: 1100;
   margin-top: 4px;
-  /* INI HANYA BATAS TINGGI MAKSIMAL. Jika isi lebih pendek, tinggi kotak akan menyesuaikan otomatis. */
   max-height: 320px;
-  /* Scrollbar hanya akan muncul JIKA isi lebih tinggi dari max-height. */
   overflow-y: auto;
   min-width: 150px;
 }
@@ -524,6 +514,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 0.9rem;
+  transition: background-color 0.2s ease;
 }
 .dropdown-item:hover {
   background-color: #f0f4fe;
@@ -539,7 +530,7 @@
   background-color: #fff5f5;
   border: 1px solid #fc8181;
   border-radius: 12px;
-  margin: 2rem;
+  margin: 2rem 0;
 }
 
 .error-container h2 {

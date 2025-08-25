@@ -1,6 +1,5 @@
 .input-wo-container {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .page-header {
@@ -27,6 +26,9 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   margin-bottom: 2rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .input-form {
@@ -163,14 +165,20 @@
   border: 1px solid #90cdf4;
 }
 
-.info-panel {
+.info-panel,
+.json-preview-panel {
   background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
   border-radius: 12px;
   padding: 1.5rem;
   border-left: 4px solid #667eea;
+  margin-bottom: 2rem;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.info-panel h3 {
+.info-panel h3,
+.json-preview-panel h3 {
   margin-top: 0;
   margin-bottom: 1rem;
   color: #2d3748;
@@ -188,11 +196,17 @@
   line-height: 1.6;
 }
 
-@media (max-width: 768px) {
-  .input-wo-container {
-    padding: 0 1rem;
-  }
+.json-preview-panel pre {
+  max-height: 300px;
+  overflow: auto;
+  background: #f6f8fa;
+  font-size: 13px;
+  border: 1px solid #eee;
+  padding: 10px;
+  border-radius: 8px;
+}
 
+@media (max-width: 768px) {
   .input-form-card {
     padding: 1.5rem;
   }

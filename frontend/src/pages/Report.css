@@ -1,0 +1,167 @@
+.report-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.report-container .page-header {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1rem;
+}
+
+.report-container .page-header h1 {
+  text-align: center;
+  color: #3b3663;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  letter-spacing: 1px;
+}
+
+.export-controls {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(44, 62, 80, 0.07);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.report-summary {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4a5568;
+  background-color: #f7fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.report-container .table-container {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.07);
+  background: #fff;
+  flex-grow: 1; /* Membuat tabel mengisi sisa ruang */
+  min-height: 0; /* Diperlukan untuk flexbox di Chrome */
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table th {
+  background: #667eea;
+  color: white;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.report-table td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+  background: #fff;
+  transition: background-color 0.2s ease;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.report-table tbody tr:hover {
+  background-color: #e9f0fb;
+}
+
+.report-container .loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #718096;
+  font-size: 1.2rem;
+}
+
+.report-container .loading-spinner {
+  font-size: 3rem;
+  margin-right: 1rem;
+  animation: spin 2s linear infinite;
+}
+
+.report-container .error-container {
+  padding: 2rem;
+  text-align: center;
+  background-color: #fff5f5;
+  border: 1px solid #fc8181;
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.report-container .no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #718096;
+}
+
+.report-container .data-cell.truncate {
+  font-size: 0.9rem;
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-container .btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(44, 62, 80, 0.04);
+  transition: all 0.2s ease;
+}
+.report-container .btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(44, 62, 80, 0.1);
+}
+.report-container .btn-primary {
+  background-color: #667eea;
+  color: white;
+}
+.report-container .btn-primary:hover:not(:disabled) {
+  background-color: #5a67d8;
+}
+.report-container .btn-info {
+  background: #4299e1;
+  color: #fff;
+}
+.report-container .btn-info:hover {
+  background: #3182ce;
+}
+.report-container .btn-secondary {
+  background: #a0aec0;
+  color: #fff;
+}
+.report-container .btn-secondary:hover {
+  background: #718096;
+}
