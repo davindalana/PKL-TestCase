@@ -204,13 +204,22 @@ const WorkOrderRow = memo(
   }) => {
     const handleDropdownChange = (key, value) => {
       let updatedFields = { [key]: value };
+      
       if (key === "sektor") {
         updatedFields = { sektor: value, workzone: "", korlap: "" };
-      }
-      if (key === "workzone") {
+      } else if (key === "workzone") {
         const newSektor = getSektorForWorkzone(value);
-        updatedFields = { workzone: value, sektor: newSektor, korlap: "" };
+        updatedFields = { workzone: value, korlap: "", sektor: newSektor };
+      } else if (key === "korlap") {
+        // Saat memilih Korlap, kita harus pastikan untuk mengirim kembali
+        // Sektor dan Workzone yang sudah ada agar tidak di-reset oleh backend.
+        updatedFields = { 
+          korlap: value, 
+          workzone: item.workzone, 
+          sektor: item.sektor 
+        };
       }
+<<<<<<< Updated upstream
 
       onUpdate(item, updatedFields);
     };
@@ -224,6 +233,16 @@ const WorkOrderRow = memo(
       () => getKorlapsForWorkzone(item.workzone),
       [item.workzone, getKorlapsForWorkzone]
     );
+=======
+      
+      onUpdate(item, updatedFields);
+    };
+
+
+    // ==> PERBAIKAN 1: Sederhanakan logika, langsung ambil dari `item` <==
+    const workzoneRowOptions = useMemo(() => getWorkzonesForSektor(item.sektor), [item.sektor, getWorkzonesForSektor]);
+    const korlapRowOptions = useMemo(() => getKorlapsForWorkzone(item.workzone), [item.workzone, getKorlapsForWorkzone]);
+>>>>>>> Stashed changes
 
     return (
       <tr className={isSelected ? "selected" : ""}>
@@ -235,6 +254,7 @@ const WorkOrderRow = memo(
           />
         </td>
         <td className="aksi-cell">
+<<<<<<< Updated upstream
           <button
             onClick={() => onFormat(item)}
             className="btn aksi-btn btn-secondary"
@@ -265,11 +285,17 @@ const WorkOrderRow = memo(
           >
             Selesai
           </button>
+=======
+          <button onClick={() => onFormat(item)} className="btn aksi-btn btn-secondary">Format</button>
+          <button onClick={() => onCopy(item)} className="btn aksi-btn btn-info">Salin</button>
+          <button onClick={() => onEdit(item)} className="btn aksi-btn btn-warning">Edit</button>
+          <button onClick={() => onDelete(item.incident)} className="btn aksi-btn btn-danger">Hapus</button>
+>>>>>>> Stashed changes
         </td>
         {allKeys
           .filter((key) => visibleKeys.has(key))
           .map((key) => {
-            const isUpdating = updatingStatus[item.incident + key];
+            const isUpdating = updatingStatus[item.incident];
             if (key === "status") {
               return (
                 <td key={key} className="interactive-cell">
@@ -287,9 +313,10 @@ const WorkOrderRow = memo(
             if (key === "sektor") {
               return (
                 <td key={key} className="interactive-cell">
+                  {/* ==> PERBAIKAN 2: Gunakan `item.sektor` secara langsung <== */}
                   <CustomDropdown
                     options={allSektorOptions}
-                    value={effectiveSektor}
+                    value={item.sektor}
                     onChange={(v) => handleDropdownChange("sektor", v)}
                     disabled={isUpdating}
                     placeholder="- Pilih Sektor -"
@@ -305,7 +332,7 @@ const WorkOrderRow = memo(
                     options={workzoneRowOptions}
                     value={item.workzone}
                     onChange={(v) => handleDropdownChange("workzone", v)}
-                    disabled={!effectiveSektor || isUpdating}
+                    disabled={!item.sektor || isUpdating}
                     placeholder="- Pilih Workzone -"
                   />
                   {isUpdating && "⏳"}
@@ -336,6 +363,7 @@ const WorkOrderRow = memo(
     );
   }
 );
+
 
 const EditModal = ({
   item,
@@ -509,34 +537,61 @@ const LihatWO = () => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
+      // Salinan dari LihatWO.jsx
+
       try {
-        const [woResponse, workzoneResponse] = await Promise.all([
+        const [woResponse, workzoneMapResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/view-mysql`),
           fetch(`${API_BASE_URL}/workzone-map`),
         ]);
 
-        if (!woResponse.ok || !workzoneResponse.ok) {
+        if (!woResponse.ok || !workzoneMapResponse.ok) {
           throw new Error(
-            `Gagal mengambil data. Status WO: ${woResponse.status}, Status Workzone: ${workzoneResponse.status}`
+            `Gagal mengambil data. Status WO: ${woResponse.status}, Status Workzone: ${workzoneMapResponse.status}`
           );
         }
 
+        // Baca setiap respons HANYA SATU KALI dan simpan di variabel
         const woResult = await woResponse.json();
-        const workzoneData = await workzoneResponse.json();
+        const workzoneMapData = await workzoneMapResponse.json();
 
-        const unique = [];
+        // Pastikan workzoneMapData adalah array
+        const validWorkzoneMap = Array.isArray(workzoneMapData) ? workzoneMapData : [];
+        
+        // Buat peta untuk mencari sektor dengan cepat
+        const sektorMap = new Map();
+        validWorkzoneMap.forEach(mapItem => {
+          sektorMap.set(mapItem.workzone, mapItem.sektor);
+        });
+
+        const initialWoData = Array.isArray(woResult.data) ? woResult.data : [];
         const seen = new Set();
-        (Array.isArray(woResult.data) ? woResult.data : []).forEach((item) => {
+
+        // Proses setiap baris: jika sektor kosong tapi workzone ada, isi sektornya!
+        const enrichedAndUniqueData = initialWoData.reduce((acc, item) => {
           if (item.incident && !seen.has(item.incident)) {
             seen.add(item.incident);
-            unique.push(item);
+            
+            // Logika untuk mengisi sektor yang kosong saat refresh
+            if (item.workzone && !item.sektor) {
+              item.sektor = sektorMap.get(item.workzone) || ""; 
+            }
+            acc.push(item);
           }
-        });
-        setWoData(unique);
-        setWorkzoneMap(Array.isArray(workzoneData) ? workzoneData : []);
+          return acc;
+        }, []);
+        
+        setWoData(enrichedAndUniqueData);
+        setWorkzoneMap(validWorkzoneMap);
+
       } catch (err) {
         console.error("Gagal mengambil data:", err);
-        setError(err.message);
+        // Tangkap pesan error 'Body is disturbed' untuk memberikan petunjuk
+        if (err.message.includes('Body is disturbed')) {
+            setError('Gagal membaca data dari server. Ini mungkin karena kesalahan pada kode frontend saat memproses respons. Silakan coba refresh halaman.');
+        } else {
+            setError(err.message);
+        }
         setWoData([]);
         setWorkzoneMap([]);
       }
@@ -548,11 +603,8 @@ const LihatWO = () => {
   const getSektorForWorkzone = useCallback(
     (workzone) => {
       if (!workzone) return "";
-      const normalizedWorkzone = workzone.toLowerCase().trim();
-      const match = workzoneMap.find(
-        (m) => m.workzone?.toLowerCase().trim() === normalizedWorkzone
-      );
-      return match?.sektor || "";
+      const match = workzoneMap.find((m) => m.workzone === workzone);
+      return match ? match.sektor : "";
     },
     [workzoneMap]
   );
@@ -560,11 +612,8 @@ const LihatWO = () => {
   const getKorlapsForWorkzone = useCallback(
     (workzone) => {
       if (!workzone) return [];
-      const normalizedWorkzone = workzone.toLowerCase().trim();
-      const match = workzoneMap.find(
-        (m) => m.workzone?.toLowerCase().trim() === normalizedWorkzone
-      );
-      return match?.korlaps || [];
+      const match = workzoneMap.find((m) => m.workzone === workzone);
+      return match ? match.korlaps : [];
     },
     [workzoneMap]
   );
@@ -572,11 +621,9 @@ const LihatWO = () => {
   const getWorkzonesForSektor = useCallback(
     (sektor) => {
       if (!sektor) return [];
-      return [
-        ...new Set(
-          workzoneMap.filter((m) => m.sektor === sektor).map((m) => m.workzone)
-        ),
-      ];
+      return workzoneMap
+        .filter((m) => m.sektor === sektor)
+        .map((m) => m.workzone);
     },
     [workzoneMap]
   );
@@ -602,11 +649,7 @@ const LihatWO = () => {
     korlapFilterOptions,
   } = useMemo(() => {
     const statusSet = new Set(woData.map((d) => d.status).filter(Boolean));
-    if (!statusSet.has("NEW")) statusSet.add("NEW");
-
-    const allSektors = [
-      ...new Set(workzoneMap.map((item) => item.sektor)),
-    ].sort();
+    const allSektors = [...new Set(workzoneMap.map((item) => item.sektor))].sort();
 
     const availableWorkzones = filter.sektor
       ? getWorkzonesForSektor(filter.sektor)
@@ -614,16 +657,11 @@ const LihatWO = () => {
 
     const availableKorlaps = filter.workzone
       ? getKorlapsForWorkzone(filter.workzone)
-      : [];
+      : [...new Set(workzoneMap.flatMap(item => item.korlaps))];
 
     return {
-      statusOptions: [
-        "NEW",
-        ...Array.from(statusSet).filter((s) => s !== "NEW"),
-      ],
-      witelOptions: Array.from(
-        new Set(woData.map((d) => d.witel).filter(Boolean))
-      ).sort(),
+      statusOptions: Array.from(statusSet),
+      witelOptions: Array.from(new Set(woData.map((d) => d.witel).filter(Boolean))).sort(),
       sektorOptions: allSektors,
       workzoneFilterOptions: availableWorkzones.sort(),
       korlapFilterOptions: availableKorlaps.sort(),
@@ -646,12 +684,12 @@ const LihatWO = () => {
             .toLowerCase()
             .includes(debouncedSearchTerm.toLowerCase())
       );
-      const itemSektor = item.sektor || getSektorForWorkzone(item.workzone);
+      // Logic untuk filter Sektor sekarang lebih sederhana
       return (
         searchMatch &&
         (!filter.status || item.status === filter.status) &&
         (!filter.witel || item.witel === filter.witel) &&
-        (!filter.sektor || itemSektor === filter.sektor) &&
+        (!filter.sektor || item.sektor === filter.sektor) &&
         (!filter.workzone || item.workzone === filter.workzone) &&
         (!filter.korlap || item.korlap === filter.korlap)
       );
@@ -669,8 +707,7 @@ const LihatWO = () => {
     woData,
     filter,
     visibleKeys,
-    sortConfig,
-    getSektorForWorkzone,
+    sortConfig
   ]);
 
   useEffect(() => {
@@ -705,6 +742,7 @@ const LihatWO = () => {
     setUpdatingStatus((p) => ({ ...p, [incidentId]: true }));
 
     try {
+<<<<<<< Updated upstream
       const response = await fetch(
         `${API_BASE_URL}/work-orders/${incidentId}`,
         {
@@ -713,6 +751,13 @@ const LihatWO = () => {
           body: JSON.stringify(dataToSend),
         }
       );
+=======
+      const response = await fetch(`${API_BASE_URL}/work-orders/${incidentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSend),
+      });
+>>>>>>> Stashed changes
 
       const result = await response.json();
 
@@ -722,8 +767,27 @@ const LihatWO = () => {
         );
       }
 
+<<<<<<< Updated upstream
       setWoData((prev) =>
         prev.map((d) => (d.incident === incidentId ? result.data : d))
+=======
+      // Salinan dari LihatWO.jsx
+
+      setWoData((prev) =>
+        prev.map((d) => {
+          if (d.incident === incidentId) {
+            // Jika respons dari backend mengosongkan sektor yang baru saja kita atur,
+            // kita kembalikan nilainya secara manual di frontend.
+            // Ini mengatasi masalah di mana backend men-default sektor menjadi kosong
+            // karena workzone-nya dikosongkan.
+            if (!result.data.sektor && updatedFields.sektor) {
+              return { ...result.data, sektor: updatedFields.sektor };
+            }
+            return result.data;
+          }
+          return d;
+        })
+>>>>>>> Stashed changes
       );
     } catch (error) {
       console.error("Gagal update data:", error);
@@ -736,6 +800,7 @@ const LihatWO = () => {
   const handleEditSave = useCallback(
     async (updatedItem) => {
       try {
+<<<<<<< Updated upstream
         const response = await fetch(
           `${API_BASE_URL}/work-orders/${editItem.incident}`,
           {
@@ -745,8 +810,17 @@ const LihatWO = () => {
           }
         );
 
+=======
+        const response = await fetch(`${API_BASE_URL}/work-orders/${editItem.incident}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedItem),
+        });
+>>>>>>> Stashed changes
         const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Gagal menyimpan');
 
+<<<<<<< Updated upstream
         if (!result.success) {
           throw new Error(result.message || "Gagal menyimpan data ke server.");
         }
@@ -754,8 +828,14 @@ const LihatWO = () => {
         setEditItem(null);
         alert("Data berhasil disimpan!");
         window.location.reload();
+=======
+        setWoData((prev) =>
+          prev.map((d) => (d.incident === editItem.incident ? result.data : d))
+        );
+        setEditItem(null);
+>>>>>>> Stashed changes
       } catch (error) {
-        alert("Error: " + error.message);
+        alert("Gagal update data: " + error.message);
       }
     },
     [editItem]
@@ -810,11 +890,22 @@ const LihatWO = () => {
         `Yakin ingin menghapus ${selectedItems.length} data terpilih?`
       )
     ) {
+<<<<<<< Updated upstream
       // Di dunia nyata, Anda akan mengirim permintaan API di sini
       setWoData((prev) =>
         prev.filter((item) => !selectedItems.includes(item.incident))
       );
       setSelectedItems([]);
+=======
+      Promise.all(selectedItems.map(id =>
+        fetch(`${API_BASE_URL}/work-orders/${id}`, { method: 'DELETE' })
+      )).then(() => {
+        setWoData((prev) =>
+          prev.filter((item) => !selectedItems.includes(item.incident))
+        );
+        setSelectedItems([]);
+      }).catch(() => alert('Gagal menghapus beberapa item.'));
+>>>>>>> Stashed changes
     }
   }, [selectedItems]);
 
@@ -874,7 +965,6 @@ const LihatWO = () => {
     }
     setShowColumnSelector(false);
   };
-
   if (isLoading)
     return (
       <div className="loading-container">
@@ -965,6 +1055,7 @@ const LihatWO = () => {
                   onChange={(e) =>
                     handleFilterChange("workzone", e.target.value)
                   }
+                  disabled={!filter.sektor}
                 >
                   <option value="">Semua Workzone</option>
                   {workzoneFilterOptions.map((opt) => (
@@ -979,7 +1070,6 @@ const LihatWO = () => {
                 <select
                   value={filter.korlap}
                   onChange={(e) => handleFilterChange("korlap", e.target.value)}
-                  disabled={!filter.workzone}
                 >
                   <option value="">Semua Korlap</option>
                   {korlapFilterOptions.map((opt) => (
