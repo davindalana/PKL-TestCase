@@ -35,7 +35,8 @@ const Report = () => {
 
   const getTableHeaders = () => {
     if (reports.length === 0) return [];
-    return Object.keys(reports[0]);
+    // IMPROVEMENT: Sort keys alphabetically for consistent column order
+    return Object.keys(reports[0]).sort();
   };
 
   const handleExportExcel = () => {
