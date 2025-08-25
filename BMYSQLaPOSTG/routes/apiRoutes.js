@@ -387,4 +387,50 @@ router.get("/workzone-map", async (req, res) => {
   }
 });
 
+// ENDPOINT BARU: Memindahkan WO ke Laporan
+router.post("/work-orders/:incident/complete", async (req, res) => {
+  const { incident } = req.params;
+  const conn = await mysqlPool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 1. Ambil data dari work_orders
+    const [rows] = await conn.query("SELECT * FROM work_orders WHERE incident = ?", [incident]);
+    if (rows.length === 0) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: "Work order tidak ditemukan." });
+    }
+    const workOrder = rows[0];
+
+    // 2. Masukkan ke tabel reports (asumsi nama tabel 'reports' dan strukturnya sama)
+    const columns = Object.keys(workOrder);
+    const values = Object.values(workOrder);
+    const insertQuery = `INSERT INTO reports (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`;
+    await conn.query(insertQuery, values);
+
+    // 3. Hapus dari tabel work_orders
+    await conn.query("DELETE FROM work_orders WHERE incident = ?", [incident]);
+
+    await conn.commit();
+    res.json({ success: true, message: "Work order telah dipindahkan ke laporan." });
+  } catch (err) {
+    await conn.rollback();
+    console.error("Gagal menyelesaikan work order:", err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// ENDPOINT BARU: Mengambil data dari tabel Laporan
+router.get("/reports", async (req, res) => {
+  try {
+    const [rows] = await mysqlPool.query("SELECT * FROM reports ORDER BY reported_date DESC");
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("Gagal mengambil data laporan:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
