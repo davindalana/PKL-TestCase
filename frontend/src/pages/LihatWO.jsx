@@ -4,10 +4,9 @@ import "./LihatWO.css";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
-// Helper function to generate formatted text for copying
 const getFormatText = (item) => `STO : ${item.workzone || "-"}
 NO. TIKET : ${item.incident || "-"}
-SERVICE NO : ${item.service_no || "-"}  ${item.service_type || ""}
+SERVICE NO : ${item.service_no || "-"}  ${item.service_type || ""}
 CUSTOMER NAME : ${item.customer_name || "-"}
 SUMMARY : ${item.summary || "-"}
 ALAMAT : ${item.alamat || "-"}
@@ -19,7 +18,6 @@ REPORTED DATE : ${item.reported_date || "-"}
 BOOKING DATE : ${item.booking_date || "-"}
 `;
 
-// Reads visible columns from localStorage or provides a default set
 const getInitialVisibleKeys = (allKeys) => {
   try {
     const saved = localStorage.getItem("wo_visible_columns");
@@ -38,7 +36,6 @@ const getInitialVisibleKeys = (allKeys) => {
   return new Set(allKeys.filter((key) => initial.has(key)));
 };
 
-// Custom hook to debounce a value
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -50,7 +47,6 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-// A reusable custom dropdown component with portal for z-index management
 const CustomDropdown = ({
   options,
   value,
@@ -180,14 +176,12 @@ const CustomDropdown = ({
   );
 };
 
-// Component for table header sort icons
 const SortIcon = ({ direction }) => (
   <span className="sort-icon">
     {direction === "asc" ? "🔼" : direction === "desc" ? "🔽" : "↕️"}
   </span>
 );
 
-// Memoized row component for performance
 const WorkOrderRow = memo(
   ({
     item,
@@ -348,7 +342,6 @@ const WorkOrderRow = memo(
   }
 );
 
-// Modal for editing an entire work order item
 const EditModal = ({
   item,
   onClose,
@@ -405,78 +398,76 @@ const EditModal = ({
       >
         <h2>Edit Incident: {item.incident}</h2>
         <form onSubmit={handleSubmit}>
-          {Object.keys(editForm)
-            .sort() // Sort keys alphabetically for consistent form field order
-            .map((key) => {
-              if (["created_at", "updated_at"].includes(key)) return null;
-              if (key === "sektor")
-                return (
-                  <div key={key} className="form-group">
-                    <label>{key.replace(/_/g, " ")}:</label>
-                    <select
-                      name={key}
-                      value={editForm[key] || ""}
-                      onChange={handleChange}
-                    >
-                      <option value="">- Pilih Sektor -</option>
-                      {allSektorOptions.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                );
-              if (key === "workzone")
-                return (
-                  <div key={key} className="form-group">
-                    <label>{key.replace(/_/g, " ")}:</label>
-                    <select
-                      name={key}
-                      value={editForm[key] || ""}
-                      onChange={handleChange}
-                      disabled={!editForm.sektor}
-                    >
-                      <option value="">- Pilih Workzone -</option>
-                      {workzoneOptions.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                );
-              if (key === "korlap")
-                return (
-                  <div key={key} className="form-group">
-                    <label>{key.replace(/_/g, " ")}:</label>
-                    <select
-                      name={key}
-                      value={editForm[key] || ""}
-                      onChange={handleChange}
-                      disabled={!editForm.workzone}
-                    >
-                      <option value="">- Pilih Korlap -</option>
-                      {korlapOptions.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                );
+          {Object.keys(editForm).map((key) => {
+            if (["created_at", "updated_at"].includes(key)) return null;
+            if (key === "sektor")
               return (
                 <div key={key} className="form-group">
                   <label>{key.replace(/_/g, " ")}:</label>
-                  <input
+                  <select
                     name={key}
                     value={editForm[key] || ""}
                     onChange={handleChange}
-                    disabled={key === "incident"}
-                  />
+                  >
+                    <option value="">- Pilih Sektor -</option>
+                    {allSektorOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               );
-            })}
+            if (key === "workzone")
+              return (
+                <div key={key} className="form-group">
+                  <label>{key.replace(/_/g, " ")}:</label>
+                  <select
+                    name={key}
+                    value={editForm[key] || ""}
+                    onChange={handleChange}
+                    disabled={!editForm.sektor}
+                  >
+                    <option value="">- Pilih Workzone -</option>
+                    {workzoneOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            if (key === "korlap")
+              return (
+                <div key={key} className="form-group">
+                  <label>{key.replace(/_/g, " ")}:</label>
+                  <select
+                    name={key}
+                    value={editForm[key] || ""}
+                    onChange={handleChange}
+                    disabled={!editForm.workzone}
+                  >
+                    <option value="">- Pilih Korlap -</option>
+                    {korlapOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            return (
+              <div key={key} className="form-group">
+                <label>{key.replace(/_/g, " ")}:</label>
+                <input
+                  name={key}
+                  value={editForm[key] || ""}
+                  onChange={handleChange}
+                  disabled={key === "incident"}
+                />
+              </div>
+            );
+          })}
           <div className="form-actions">
             <button type="submit" className="btn btn-primary">
               Simpan
@@ -491,7 +482,6 @@ const EditModal = ({
   );
 };
 
-// Main component for viewing Work Orders
 const LihatWO = () => {
   const [woData, setWoData] = useState([]);
   const [workzoneMap, setWorkzoneMap] = useState([]);
@@ -524,6 +514,7 @@ const LihatWO = () => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
+
       try {
         const [woResponse, workzoneMapResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/view-mysql`),
@@ -554,6 +545,7 @@ const LihatWO = () => {
         const enrichedAndUniqueData = initialWoData.reduce((acc, item) => {
           if (item.incident && !seen.has(item.incident)) {
             seen.add(item.incident);
+
             if (item.workzone && !item.sektor) {
               item.sektor = sektorMap.get(item.workzone) || "";
             }
@@ -566,9 +558,13 @@ const LihatWO = () => {
         setWorkzoneMap(validWorkzoneMap);
       } catch (err) {
         console.error("Gagal mengambil data:", err);
-        setError(
-          err.message || "Terjadi kesalahan. Pastikan server backend berjalan."
-        );
+        if (err.message.includes("Body is disturbed")) {
+          setError(
+            "Gagal membaca data dari server. Ini mungkin karena kesalahan pada kode frontend saat memproses respons. Silakan coba refresh halaman."
+          );
+        } else {
+          setError(err.message);
+        }
         setWoData([]);
         setWorkzoneMap([]);
       }
@@ -609,7 +605,7 @@ const LihatWO = () => {
     const keys = new Set(woData.flatMap((obj) => Object.keys(obj)));
     if (!keys.has("korlap")) keys.add("korlap");
     if (!keys.has("sektor")) keys.add("sektor");
-    return Array.from(keys).sort();
+    return Array.from(keys);
   }, [woData]);
 
   useEffect(() => {
@@ -639,7 +635,7 @@ const LihatWO = () => {
       : [...new Set(workzoneMap.flatMap((item) => item.korlaps))];
 
     return {
-      statusOptions: Array.from(statusSet).sort(),
+      statusOptions: Array.from(statusSet),
       witelOptions: Array.from(
         new Set(woData.map((d) => d.witel).filter(Boolean))
       ).sort(),
@@ -734,11 +730,19 @@ const LihatWO = () => {
       }
 
       setWoData((prev) =>
-        prev.map((d) => (d.incident === incidentId ? result.data : d))
+        prev.map((d) => {
+          if (d.incident === incidentId) {
+            if (!result.data.sektor && updatedFields.sektor) {
+              return { ...result.data, sektor: updatedFields.sektor };
+            }
+            return result.data;
+          }
+          return d;
+        })
       );
     } catch (error) {
       console.error("Gagal update data:", error);
-      alert("Gagal memperbarui data: " + error.message);
+      alert("Gagal memperbarui data.");
     } finally {
       setUpdatingStatus((p) => ({ ...p, [incidentId]: false }));
     }
@@ -746,7 +750,6 @@ const LihatWO = () => {
 
   const handleEditSave = useCallback(
     async (updatedItem) => {
-      setUpdatingStatus((p) => ({ ...p, [updatedItem.incident]: true }));
       try {
         const response = await fetch(
           `${API_BASE_URL}/work-orders/${editItem.incident}`,
@@ -767,29 +770,21 @@ const LihatWO = () => {
         setEditItem(null);
       } catch (error) {
         alert("Gagal update data: " + error.message);
-      } finally {
-        setUpdatingStatus((p) => ({ ...p, [updatedItem.incident]: false }));
       }
     },
     [editItem]
   );
 
   const handleDelete = useCallback(async (incident) => {
-    if (window.confirm(`Yakin ingin menghapus incident ${incident}?`)) {
+    if (window.confirm("Yakin ingin menghapus data ini?")) {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/work-orders/${incident}`,
-          {
-            method: "DELETE",
-          }
-        );
-        if (!response.ok) {
-          throw new Error("Gagal menghapus data di server.");
-        }
+        await fetch(`${API_BASE_URL}/work-orders/${incident}`, {
+          method: "DELETE",
+        });
         setWoData((prev) => prev.filter((item) => item.incident !== incident));
         setSelectedItems((prev) => prev.filter((item) => item !== incident));
       } catch (err) {
-        alert("Gagal menghapus data: " + err.message);
+        alert("Gagal menghapus data.");
       }
     }
   }, []);
@@ -797,7 +792,7 @@ const LihatWO = () => {
   const handleCompleteTicket = useCallback(async (incident) => {
     if (
       window.confirm(
-        `Apakah Anda yakin ingin menyelesaikan tiket ${incident}? Data akan dipindahkan ke laporan.`
+        "Apakah Anda yakin ingin menyelesaikan tiket ini? Data akan dipindahkan ke laporan."
       )
     ) {
       try {
@@ -809,11 +804,7 @@ const LihatWO = () => {
         );
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error("Server returned an error page:", errorText);
-          throw new Error(
-            "Gagal menyelesaikan tiket. Respons dari server bukan JSON yang valid."
-          );
+          throw new Error("Gagal menyelesaikan tiket di server.");
         }
 
         setWoData((prev) => prev.filter((item) => item.incident !== incident));
@@ -821,7 +812,7 @@ const LihatWO = () => {
         alert("Tiket berhasil diselesaikan dan dipindahkan ke laporan.");
       } catch (err) {
         console.error("Gagal menyelesaikan tiket:", err);
-        alert(`Gagal menyelesaikan tiket: ${err.message}`);
+        alert("Gagal menyelesaikan tiket. Cek konsol untuk detail.");
       }
     }
   }, []);
@@ -838,17 +829,13 @@ const LihatWO = () => {
           fetch(`${API_BASE_URL}/work-orders/${id}`, { method: "DELETE" })
         )
       )
-        .then((responses) => {
-          const failed = responses.filter((res) => !res.ok);
-          if (failed.length > 0) {
-            throw new Error(`${failed.length} item gagal dihapus.`);
-          }
+        .then(() => {
           setWoData((prev) =>
             prev.filter((item) => !selectedItems.includes(item.incident))
           );
           setSelectedItems([]);
         })
-        .catch((err) => alert("Gagal menghapus beberapa item: " + err.message));
+        .catch(() => alert("Gagal menghapus beberapa item."));
     }
   }, [selectedItems]);
 
@@ -858,7 +845,6 @@ const LihatWO = () => {
       alert("Format berhasil disalin!");
     } catch (err) {
       console.error("Gagal menyalin teks:", err);
-      alert("Gagal menyalin. Cek konsol browser untuk detail.");
     }
   }, []);
 
@@ -1164,7 +1150,7 @@ const LihatWO = () => {
           </span>
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages || totalPages === 0}
+            disabled={currentPage === totalPages}
           >
             Berikutnya &raquo;
           </button>
@@ -1181,12 +1167,6 @@ const LihatWO = () => {
             <pre className="format-pre">{getFormatText(formatIncident)}</pre>
             <button
               className="btn btn-primary"
-              onClick={() => handleCopy(formatIncident)}
-            >
-              Salin
-            </button>
-            <button
-              className="btn btn-outline"
               onClick={() => setFormatIncident(null)}
             >
               Tutup
