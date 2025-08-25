@@ -5,39 +5,45 @@ import CustomDropdown from '../../components/CustomDropdown';
 export const WorkOrderRow = memo(({
     item, allKeys, visibleKeys, isSelected, onSelect, onUpdate,
     updatingStatus, onEdit, onDelete, onFormat, onCopy, onComplete,
-    allSektorOptions, statusOptions, getSektorForWorkzone,
+    allSektorOptions, statusOptions,
     getWorkzonesForSektor, getKorlapsForWorkzone
 }) => {
-    // ... (kode dari WorkOrderRow di file asli Anda)
-    // Salin dan tempel seluruh kode komponen WorkOrderRow di sini
+
     const handleDropdownChange = (key, value) => {
-      let updatedFields = { [key]: value };
+      
+        // Siapkan data perubahan
+        const updatedFields = { [key]: value };
 
-      if (key === "sektor") {
-        updatedFields = { sektor: value, workzone: null, korlap: null };
-      } else if (key === "workzone") {
-        const newSektor = getSektorForWorkzone(value);
-        updatedFields = { workzone: value, korlap: null, sektor: newSektor };
-      } else if (key === "korlap") {
-        updatedFields = {
-          korlap: value,
-          workzone: item.workzone,
-          sektor: item.sektor,
-        };
-      }
+        // **LOGIKA KUNCI ADA DI SINI**
+        // Jika pengguna mengubah Sektor, kita harus mereset Workzone dan Korlap
+        // agar pengguna memilih ulang sesuai urutan.
+        if (key === "sektor") {
+            updatedFields.workzone = null; // Kosongkan workzone
+            updatedFields.korlap = null;   // Kosongkan korlap
+        } 
+        // Jika pengguna mengubah Workzone, hanya Korlap yang direset.
+        else if (key === "workzone") {
+            updatedFields.korlap = null;   // Kosongkan korlap
+        }
+        console.log("1. [WorkOrderRow] Perubahan terdeteksi:", updatedFields);
 
-      onUpdate(item, updatedFields);
+
+        // Panggil fungsi onUpdate dengan data item asli dan field yang sudah diubah.
+        // Fungsi onUpdate di file index.jsx akan mengirim ini ke backend untuk disimpan.
+        onUpdate(item, updatedFields);
     };
 
     const workzoneRowOptions = useMemo(
-      () => getWorkzonesForSektor(item.sektor),
-      [item.sektor, getWorkzonesForSektor]
+        () => getWorkzonesForSektor(item.sektor),
+        [item.sektor, getWorkzonesForSektor]
     );
+    
     const korlapRowOptions = useMemo(
-      () => getKorlapsForWorkzone(item.workzone),
-      [item.workzone, getKorlapsForWorkzone]
+        () => getKorlapsForWorkzone(item.workzone),
+        [item.workzone, getKorlapsForWorkzone]
     );
 
+    // Bagian return JSX tidak perlu diubah sama sekali.
     return (
       <tr className={isSelected ? "selected" : ""}>
         <td>

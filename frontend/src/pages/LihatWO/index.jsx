@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import "./LihatWO.css";
-
-// Impor komponen dan hook yang sudah dipisah
 import { useDebounce } from "../../hooks/useDebounce";
 import { getFormatText, getInitialVisibleKeys } from "../../utils/woUtils";
 import { WorkOrderRow } from "./WorkOrderRow";
@@ -13,9 +11,8 @@ import SortIcon from "../../components/SortIcon";
 const API_BASE_URL = "http://localhost:3000/api";
 
 const LihatWO = () => {
-  // ... (Salin dan tempel semua state [useState] dari file LihatWO.jsx asli Anda di sini)
   const [woData, setWoData] = useState([]);
-  const [workzoneMap, setWorkzoneMap] = useState([]);
+  const [workzoneMap, setWorkzoneMap] = useState([]); // Sekarang akan menjadi array
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,28 +22,19 @@ const LihatWO = () => {
   const [editItem, setEditItem] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState({});
   const [filter, setFilter] = useState({
-    status: "",
-    sektor: "",
-    workzone: "",
-    korlap: "",
-    witel: "",
+    status: "", sektor: "", workzone: "", korlap: "", witel: "",
   });
   const [selectedItems, setSelectedItems] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
-    key: "incident",
-    direction: "asc",
-  });
+  const [sortConfig, setSortConfig] = useState({ key: "incident", direction: "asc" });
   const [visibleKeys, setVisibleKeys] = useState(new Set());
   const [draftVisibleKeys, setDraftVisibleKeys] = useState(new Set());
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // ... (Salin dan tempel semua fungsi [useEffect, useCallback, useMemo, dll.] dari file LihatWO.jsx asli Anda di sini)
-    useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
         const [woResponse, workzoneMapResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/view-mysql`),
@@ -54,84 +42,49 @@ const LihatWO = () => {
         ]);
 
         if (!woResponse.ok || !workzoneMapResponse.ok) {
-          throw new Error(
-            `Gagal mengambil data. Status WO: ${woResponse.status}, Status Workzone: ${workzoneMapResponse.status}`
-          );
+          throw new Error(`Gagal mengambil data.`);
         }
 
         const woResult = await woResponse.json();
-        const workzoneMapData = await workzoneMapResponse.json();
+        const workzoneMapResult = await workzoneMapResponse.json(); // Ini sekarang array
 
-        const validWorkzoneMap = Array.isArray(workzoneMapData)
-          ? workzoneMapData
-          : [];
+        setWoData(Array.isArray(woResult.data) ? woResult.data : []);
+        // Langsung simpan array dari API
+        setWorkzoneMap(Array.isArray(workzoneMapResult) ? workzoneMapResult : []);
 
-        const sektorMap = new Map();
-        validWorkzoneMap.forEach((mapItem) => {
-          sektorMap.set(mapItem.workzone, mapItem.sektor);
-        });
-
-        const initialWoData = Array.isArray(woResult.data) ? woResult.data : [];
-        const seen = new Set();
-
-        const enrichedAndUniqueData = initialWoData.reduce((acc, item) => {
-          if (item.incident && !seen.has(item.incident)) {
-            seen.add(item.incident);
-
-            if (item.workzone && !item.sektor) {
-              item.sektor = sektorMap.get(item.workzone) || "";
-            }
-            acc.push(item);
-          }
-          return acc;
-        }, []);
-
-        setWoData(enrichedAndUniqueData);
-        setWorkzoneMap(validWorkzoneMap);
       } catch (err) {
         console.error("Gagal mengambil data:", err);
-        if (err.message.includes("Body is disturbed")) {
-          setError(
-            "Gagal membaca data dari server. Ini mungkin karena kesalahan pada kode frontend saat memproses respons. Silakan coba refresh halaman."
-          );
-        } else {
-          setError(err.message);
-        }
-        setWoData([]);
-        setWorkzoneMap([]);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     fetchData();
   }, []);
 
-  const getSektorForWorkzone = useCallback(
-    (workzone) => {
-      if (!workzone) return "";
-      const match = workzoneMap.find((m) => m.workzone === workzone);
-      return match ? match.sektor : "";
-    },
-    [workzoneMap]
-  );
+  // Fungsi pembantu sekarang lebih sederhana dan andal
+  const getSektorForWorkzone = useCallback((workzone) => {
+    if (!workzone) return "";
+    const match = workzoneMap.find((m) => m.workzone === workzone);
+    return match ? match.sektor : "";
+  }, [workzoneMap]);
 
-  const getKorlapsForWorkzone = useCallback(
-    (workzone) => {
-      if (!workzone) return [];
-      const match = workzoneMap.find((m) => m.workzone === workzone);
-      return match ? match.korlaps : [];
-    },
-    [workzoneMap]
-  );
+  const getKorlapsForWorkzone = useCallback((workzone) => {
+    if (!workzone) return [];
+    const match = workzoneMap.find((m) => m.workzone === workzone);
+    return match ? match.korlaps.sort() : [];
+  }, [workzoneMap]);
 
-  const getWorkzonesForSektor = useCallback(
-    (sektor) => {
-      if (!sektor) return [];
-      return workzoneMap
-        .filter((m) => m.sektor === sektor)
-        .map((m) => m.workzone);
-    },
-    [workzoneMap]
-  );
+  const getWorkzonesForSektor = useCallback((sektor) => {
+    if (!sektor) return [];
+    return workzoneMap
+      .filter((m) => m.sektor === sektor)
+      .map((m) => m.workzone)
+      .sort();
+  }, [workzoneMap]);
+
+  // ... (sisa kode dari handleUpdateRow sampai akhir komponen tetap sama)
+  // Salin semua fungsi lainnya dari file asli Anda ke sini
 
   const allKeys = useMemo(() => {
     const keys = new Set(woData.flatMap((obj) => Object.keys(obj)));
@@ -154,17 +107,15 @@ const LihatWO = () => {
     korlapFilterOptions,
   } = useMemo(() => {
     const statusSet = new Set(woData.map((d) => d.status).filter(Boolean));
-    const allSektors = [
-      ...new Set(workzoneMap.map((item) => item.sektor)),
-    ].sort();
+    const allSektors = [...new Set(workzoneMap.map((item) => item.sektor))].sort();
 
     const availableWorkzones = filter.sektor
       ? getWorkzonesForSektor(filter.sektor)
-      : [...new Set(workzoneMap.map((i) => i.workzone))];
+      : [...new Set(workzoneMap.map((i) => i.workzone))].sort();
 
     const availableKorlaps = filter.workzone
       ? getKorlapsForWorkzone(filter.workzone)
-      : [...new Set(workzoneMap.flatMap((item) => item.korlaps))];
+      : [...new Set(workzoneMap.flatMap((item) => item.korlaps))].sort();
 
     return {
       statusOptions: Array.from(statusSet),
@@ -172,8 +123,8 @@ const LihatWO = () => {
         new Set(woData.map((d) => d.witel).filter(Boolean))
       ).sort(),
       sektorOptions: allSektors,
-      workzoneFilterOptions: availableWorkzones.sort(),
-      korlapFilterOptions: availableKorlaps.sort(),
+      workzoneFilterOptions: availableWorkzones,
+      korlapFilterOptions: availableKorlaps,
     };
   }, [
     woData,
@@ -237,38 +188,36 @@ const LihatWO = () => {
     });
   }, []);
 
-  const handleUpdateRow = useCallback(async (originalItem, updatedFields) => {
+  const handleUpdateRow = async (originalItem, updatedFields) => {
+    console.log(`--- Langkah 2: handleUpdateRow dipanggil ---`);
+    console.log("Data asli:", originalItem.sektor, originalItem.workzone, originalItem.korlap);
+    console.log("Perubahan yang diterima:", updatedFields.sektor, updatedFields.workzone, updatedFields.korlap);
     const incidentId = originalItem.incident;
-    const dataToSend = { ...originalItem, ...updatedFields };
-
+    const optimisticData = { ...originalItem, ...updatedFields };
+    console.log("2. [LihatWO] Data sebelum dikirim (Optimistic):", optimisticData.sektor, optimisticData.workzone, optimisticData.korlap);
     setUpdatingStatus((p) => ({ ...p, [incidentId]: true }));
-
+    console.log(originalItem.sektor);
     setWoData((prev) =>
-      prev.map((d) => (d.incident === incidentId ? dataToSend : d))
+      prev.map((d) => (d.incident === incidentId ? optimisticData : d))
     );
-
     try {
       const response = await fetch(
         `${API_BASE_URL}/work-orders/${incidentId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataToSend),
+          body: JSON.stringify(optimisticData),
         }
       );
-
       const result = await response.json();
 
+      console.log("3. [LihatWO] Data diterima dari server:", result.data.sektor, result.data.workzone, result.data.korlap, response.status);
       if (!result.success) {
-        throw new Error(
-          result.message || "Gagal menyimpan perubahan ke server."
-        );
+        throw new Error(result.message || "Gagal menyimpan");
       }
-      
       setWoData((prev) =>
         prev.map((d) => (d.incident === incidentId ? result.data : d))
       );
-
     } catch (error) {
       console.error("Gagal update data:", error);
       alert("Gagal memperbarui data. Mengembalikan ke kondisi semula.");
@@ -278,36 +227,34 @@ const LihatWO = () => {
     } finally {
       setUpdatingStatus((p) => ({ ...p, [incidentId]: false }));
     }
-  }, []);
+  };
 
-  const handleEditSave = useCallback(
-    async (updatedItem) => {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/work-orders/${editItem.incident}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedItem),
-          }
-        );
 
-        const result = await response.json();
-        if (!result.success)
-          throw new Error(result.message || "Gagal menyimpan");
+  const handleEditSave = useCallback(async (updatedItem) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/work-orders/${editItem.incident}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedItem),
+        }
+      );
 
-        setWoData((prev) =>
-          prev.map((d) => (d.incident === editItem.incident ? result.data : d))
-        );
-        setEditItem(null);
-      } catch (error) {
-        alert("Gagal update data: " + error.message);
-      }
-    },
-    [editItem]
-  );
+      const result = await response.json();
+      if (!result.success)
+        throw new Error(result.message || "Gagal menyimpan");
 
-  const handleDelete = useCallback(async (incident) => {
+      setWoData((prev) =>
+        prev.map((d) => (d.incident === editItem.incident ? result.data : d))
+      );
+      setEditItem(null);
+    } catch (error) {
+      alert("Gagal update data: " + error.message);
+    }
+  }, [editItem]);
+
+  const handleDelete = async (incident) => {
     if (window.confirm("Yakin ingin menghapus data ini?")) {
       try {
         await fetch(`${API_BASE_URL}/work-orders/${incident}`, {
@@ -319,7 +266,7 @@ const LihatWO = () => {
         alert("Gagal menghapus data.");
       }
     }
-  }, []);
+  };
 
   const handleCompleteTicket = useCallback(async (incident) => {
     const ticketToComplete = woData.find(item => item.incident === incident);
@@ -328,7 +275,7 @@ const LihatWO = () => {
       alert("⚠️ Gagal! Pastikan Sektor sudah dipilih sebelum menyelesaikan tiket.");
       return;
     }
-    
+
     if (
       window.confirm(
         "Apakah Anda yakin ingin menyelesaikan tiket ini? Data akan dipindahkan ke laporan."
@@ -343,16 +290,17 @@ const LihatWO = () => {
         );
 
         if (!response.ok) {
-          throw new Error("Gagal menyelesaikan tiket di server.");
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Gagal menyelesaikan tiket di server.");
         }
 
         setWoData((prev) => prev.filter((item) => item.incident !== incident));
         setSelectedItems((prev) => prev.filter((item) => item !== incident));
         alert("Tiket berhasil diselesaikan dan dipindahkan ke laporan.");
-        
+
       } catch (err) {
         console.error("Gagal menyelesaikan tiket:", err);
-        alert("Gagal menyelesaikan tiket. Cek konsol untuk detail.");
+        alert("Gagal menyelesaikan tiket: " + err.message);
       }
     }
   }, [woData]);
@@ -435,8 +383,7 @@ const LihatWO = () => {
     }
     setShowColumnSelector(false);
   };
-  
-  // Salin dan tempel bagian return JSX dari file LihatWO.jsx asli Anda di sini
+
   if (isLoading)
     return (
       <div className="loading-container">

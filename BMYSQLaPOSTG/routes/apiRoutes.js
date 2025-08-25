@@ -238,209 +238,61 @@ router.post("/work-orders", async (req, res) => {
 });
 
 /**
- * ENDPOINT: Mengedit Work Order (VERSI BARU: Mengembalikan data terbaru)
- * Metode: PUT
+ * ENDPOINT DIPERBAIKI TOTAL: Mengedit Work Order
  * URL: /api/work-orders/:incident
  */
 router.put("/work-orders/:incident", async (req, res) => {
   const { incident } = req.params;
   const data = req.body;
-
-  const allColumns = [
-    "ticket_id_gamas",
-    "external_ticket_id",
-    "customer_id",
-    "customer_name",
-    "service_id",
-    "service_no",
-    "summary",
-    "description_assignment",
-    "reported_date",
-    "reported_by",
-    "reported_priority",
-    "source_ticket",
-    "channel",
-    "contact_phone",
-    "contact_name",
-    "contact_email",
-    "status",
-    "status_date",
-    "booking_date",
-    "resolve_date",
-    "date_modified",
-    "last_update_worklog",
-    "closed_by",
-    "closed_reopen_by",
-    "guarantee_status",
-    "ttr_customer",
-    "ttr_agent",
-    "ttr_mitra",
-    "ttr_nasional",
-    "ttr_pending",
-    "ttr_region",
-    "ttr_witel",
-    "ttr_end_to_end",
-    "owner_group",
-    "owner",
-    "witel",
-    "workzone",
-    "region",
-    "subsidiary",
-    "territory_near_end",
-    "territory_far_end",
-    "customer_segment",
-    "customer_type",
-    "customer_category",
-    "service_type",
-    "slg",
-    "technology",
-    "lapul",
-    "gaul",
-    "onu_rx",
-    "pending_reason",
-    "incident_domain",
-    "symptom",
-    "hierarchy_path",
-    "solution",
-    "description_actual_solution",
-    "kode_produk",
-    "perangkat",
-    "technician",
-    "device_name",
-    "sn_ont",
-    "tipe_ont",
-    "manufacture_ont",
-    "impacted_site",
-    "cause",
-    "resolution",
-    "worklog_summary",
-    "classification_flag",
-    "realm",
-    "related_to_gamas",
-    "tsc_result",
-    "scc_result",
-    "note",
-    "notes_eskalasi",
-    "rk_information",
-    "external_ticket_tier_3",
-    "classification_path",
-    "urgency",
-    "alamat",
-    "korlap",
-  ];
-  const dateColumns = [
-    "reported_date",
-    "status_date",
-    "booking_date",
-    "resolve_date",
-    "date_modified",
-  ];
-  delete data.incident;
-  const keys = Object.keys(data).filter((key) => allColumns.includes(key));
-  if (keys.length === 0) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Tidak ada data valid untuk diperbarui.",
-      });
-  }
-  const values = keys.map((key) => {
-    const value = data[key];
-    if (
-      dateColumns.includes(key) &&
-      typeof value === "string" &&
-      value.includes("T")
-    ) {
-      try {
-        return new Date(value).toISOString().slice(0, 19).replace("T", " ");
-      } catch (e) {
-        return value;
-      }
-    }
-    return value;
-  });
-  const setClauses = keys.map((k) => `${k} = ?`).join(", ");
-  const updateQuery = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
-
   const conn = await mysqlPool.getConnection();
+
   try {
     await conn.beginTransaction();
-    const [result] = await conn.query(updateQuery, [...values, incident]);
 
-    if (result.affectedRows === 0) {
+    const allowedUpdateColumns = [
+      'sektor', 'workzone', 'korlap', 'status', 'alamat', 'customer_name', 'summary'
+      // Tambahkan kolom lain yang bisa diubah jika perlu
+    ];
+    
+    const keysToUpdate = Object.keys(data).filter(key => allowedUpdateColumns.includes(key));
+    
+    if (keysToUpdate.length === 0) {
       await conn.rollback();
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Work order dengan incident ${incident} tidak ditemukan.`,
-        });
+      return res.status(400).json({ success: false, message: "Tidak ada data untuk diupdate." });
     }
 
-    if (data.service_no) {
-      const syncQuery = `
-                UPDATE work_orders wo
-                JOIN data_layanan dl ON wo.service_no = dl.service_no
-                SET wo.alamat = dl.alamat
-                WHERE wo.service_no = ?;
-            `;
-      await conn.query(syncQuery, [data.service_no]);
-    }
+    const valuesToUpdate = keysToUpdate.map(key => data[key]);
+    const setClauses = keysToUpdate.map(k => `\`${k}\` = ?`).join(', ');
 
-    // ==> PERBAIKAN 1: Ambil data terbaru dari database <==
+    // 1. Lakukan proses UPDATE ke database
+    const updateQuery = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
+    await conn.query(updateQuery, [...valuesToUpdate, incident]);
+
+    // 2. **LANGKAH KUNCI**: Setelah UPDATE, ambil kembali data yang sudah lengkap dari database
     const [updatedRows] = await conn.query(
-      "SELECT * FROM work_orders WHERE incident = ?",
+      `SELECT * FROM work_orders WHERE incident = ?`,
       [incident]
     );
 
     await conn.commit();
 
-    // ==> PERBAIKAN 2: Kirim data terbaru sebagai respons <==
+    if (updatedRows.length === 0) {
+      return res.status(404).json({ success: false, message: "Work order tidak ditemukan." });
+    }
+
+    // 3. Kirim kembali data yang 100% benar dan terbaru sebagai respons
     res.json({
       success: true,
       message: "Work order berhasil diperbarui.",
-      data: updatedRows[0], // Kirim objek data yang sudah ter-update
+      data: updatedRows[0]
     });
+
   } catch (err) {
     await conn.rollback();
     console.error("Gagal mengedit work order:", err);
     res.status(500).json({ success: false, error: err.message });
   } finally {
     conn.release();
-  }
-});
-
-/**
- * ENDPOINT: Menghapus Work Order dari MySQL
- * Metode: DELETE
- * URL: /api/work-orders/:incident
- */
-router.delete("/work-orders/:incident", async (req, res) => {
-  const { incident } = req.params;
-
-  try {
-    const [result] = await mysqlPool.query(
-      "DELETE FROM work_orders WHERE incident = ?",
-      [incident]
-    );
-
-    if (result.affectedRows === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: `Work order dengan incident ${incident} tidak ditemukan.`,
-        });
-    }
-
-    res.json({
-      success: true,
-      message: `Work order dengan incident ${incident} berhasil dihapus.`,
-    });
-  } catch (err) {
-    console.error("Gagal menghapus work order:", err);
-    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -639,34 +491,93 @@ router.get("/workzones", async (req, res) => {
 });
 
 /**
- * ENDPOINT BARU: Mengambil seluruh pemetaan Workzone, Korlap, dan Sektor
- * Metode: GET
+ * ENDPOINT DIPERBAIKI: Mengambil pemetaan workzone
  * URL: /api/workzone-map
  */
 router.get("/workzone-map", async (req, res) => {
   try {
     const [rows] = await mysqlPool.query(
-      "SELECT workzone, korlap_username, sektor FROM workzone_details ORDER BY workzone, korlap_username"
+      "SELECT sektor, workzone, korlap_username FROM workzone_details ORDER BY sektor, workzone"
     );
 
-    // Proses data mentah menjadi format yang mudah digunakan di frontend
-    const map = rows.reduce((acc, { workzone, korlap_username, sektor }) => {
-      if (!acc[workzone]) {
-        acc[workzone] = {
-          workzone: workzone,
-          sektor: sektor,
-          korlaps: [],
-        };
+    const workzoneGroups = rows.reduce((acc, { sektor, workzone, korlap_username }) => {
+      const key = `${sektor}|${workzone}`;
+      if (!acc[key]) {
+        acc[key] = { sektor, workzone, korlaps: [] };
       }
-      acc[workzone].korlaps.push(korlap_username);
+      if (korlap_username) {
+        acc[key].korlaps.push(korlap_username);
+      }
       return acc;
     }, {});
 
-    // Kirim sebagai array objek
-    res.json(Object.values(map));
+    res.json(Object.values(workzoneGroups));
   } catch (err) {
-    console.error("Gagal mengambil pemetaan workzone:", err);
     res.status(500).json({ error: "Terjadi kesalahan pada server" });
+  }
+});
+
+
+/**
+ * ENDPOINT DIPERBAIKI: Mengedit Work Order
+ * URL: /api/work-orders/:incident
+ */
+router.put("/work-orders/:incident", async (req, res) => {
+  const { incident } = req.params;
+  const data = req.body;
+  const conn = await mysqlPool.getConnection();
+
+  try {
+    await conn.beginTransaction();
+
+    // 1. Tentukan kolom mana saja yang boleh diubah
+    const allowedUpdateColumns = [
+      'sektor', 'workzone', 'korlap', 'status', 'alamat', 'customer_name', 
+      'summary', 'reported_by', 'contact_phone' // Tambahkan kolom lain jika perlu
+    ];
+    
+    const keysToUpdate = Object.keys(data).filter(key => allowedUpdateColumns.includes(key));
+    
+    if (keysToUpdate.length === 0) {
+      await conn.rollback();
+      return res.status(400).json({ success: false, message: "Tidak ada data valid untuk diperbarui." });
+    }
+
+    const valuesToUpdate = keysToUpdate.map(key => data[key]);
+    const setClauses = keysToUpdate.map(k => `\`${k}\` = ?`).join(', ');
+
+    // 2. Lakukan proses UPDATE ke database
+    const updateQuery = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
+    await conn.query(updateQuery, [...valuesToUpdate, incident]);
+
+    // 3. **LANGKAH KUNCI**: Setelah UPDATE berhasil, ambil kembali data yang sudah lengkap
+    const [updatedRows] = await conn.query(
+      `SELECT wo.*, wd.sektor 
+       FROM work_orders wo
+       LEFT JOIN workzone_details wd ON wo.workzone = wd.workzone
+       WHERE wo.incident = ?`,
+      [incident]
+    );
+
+    await conn.commit();
+
+    if (updatedRows.length === 0) {
+      return res.status(404).json({ success: false, message: "Work order tidak ditemukan setelah update." });
+    }
+
+    // 4. Kirim kembali data yang sudah 100% benar dan terbaru sebagai respons
+    res.json({
+      success: true,
+      message: "Work order berhasil diperbarui.",
+      data: updatedRows[0]
+    });
+
+  } catch (err) {
+    await conn.rollback();
+    console.error("Gagal mengedit work order:", err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    conn.release();
   }
 });
 
