@@ -246,7 +246,6 @@ router.put("/work-orders/:incident", async (req, res) => {
   const { incident } = req.params;
   const data = req.body;
 
-  // ... (kode validasi dan persiapan data Anda tetap sama) ...
   const allColumns = [
     "ticket_id_gamas",
     "external_ticket_id",

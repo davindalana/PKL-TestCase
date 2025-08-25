@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 import Layout from "./components/Layout";
 import InputWO from "./pages/InputWO";
-import LihatWO from "./pages/LihatWO";
+import LihatWO from "./pages/LihatWO/index";
 import Report from "./pages/Report";
 
 function App() {
