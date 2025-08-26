@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // <-- TAMBAHKAN INI
 import * as XLSX from "xlsx";
 import "./InputWO.css";
 
 const InputWO = () => {
+  const navigate = useNavigate(); // <-- TAMBAHKAN INI
   const [textData, setTextData] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -141,9 +143,7 @@ const InputWO = () => {
   const parseTSV = (tsv) => {
     const lines = tsv.trim().split(/\r?\n/);
     if (lines.length < 2) return [];
-
     const headers = normalizeHeaders(lines[0].split("\t"));
-
     const dataArray = lines.slice(1).map((line) => {
       const values = line.split("\t");
       const obj = {};
@@ -152,7 +152,6 @@ const InputWO = () => {
       });
       return obj;
     });
-
     return processData(dataArray);
   };
 
@@ -163,7 +162,6 @@ const InputWO = () => {
     setFileName(file.name);
     setIsLoading(true);
     setMessage("⏳ Membaca file...");
-
     const fileExtension = file.name.split(".").pop().toLowerCase();
 
     if (["xlsx", "xls", "csv"].includes(fileExtension)) {
@@ -270,8 +268,14 @@ const InputWO = () => {
       });
 
       if (response.ok) {
-        setMessage("✅ Data berhasil disimpan ke database!");
-        handleClear();
+        // <-- BAGIAN YANG DIUBAH DIMULAI DI SINI
+        setMessage(
+          "✅ Data berhasil disimpan! Mengarahkan ke halaman utama..."
+        );
+        setTimeout(() => {
+          navigate("/lihat-wo"); // Ganti path jika perlu
+        }, 1500); // Jeda 1.5 detik agar pesan terbaca
+        // <-- BAGIAN YANG DIUBAH SELESAI
       } else {
         let errMsg = "Gagal menyimpan data";
         try {
@@ -282,9 +286,9 @@ const InputWO = () => {
       }
     } catch (error) {
       setMessage("❌ Error: " + error.message);
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // <-- UBAH INI: Pastikan loading berhenti saat error
     }
+    // finally block tidak diperlukan lagi di sini karena setIsLoading sudah dihandle di dalam blok try/catch
   };
 
   const handleClear = () => {

@@ -21,8 +21,6 @@ const ActionDropdown = ({
       const rect = dropdownRef.current.getBoundingClientRect();
       setMenuPosition({
         top: rect.bottom + window.scrollY,
-        // --- PERUBAHAN DI SINI ---
-        // Hitung titik tengah tombol sebagai posisi kiri menu
         left: rect.left + rect.width / 2 + window.scrollX,
       });
     }
@@ -53,13 +51,22 @@ const ActionDropdown = ({
   }, [isOpen]);
 
   const handleAction = (action) => {
-    action(item.incident ? item : item.incident);
+    // Fungsi ini tetap berguna untuk aksi yang butuh seluruh objek 'item'
+    action(item);
     setIsOpen(false);
   };
 
   const handleDirectDelete = (e) => {
     e.preventDefault();
-    onDelete(item.incident);
+    onDelete(item.incident); // Mengirim ID
+    setIsOpen(false);
+  };
+
+  // --- PENAMBAHAN FUNGSI BARU DI SINI ---
+  // Fungsi ini khusus untuk aksi "Selesaikan" agar hanya mengirim ID.
+  const handleDirectComplete = (e) => {
+    e.preventDefault();
+    onComplete(item.incident); // Mengirim ID
     setIsOpen(false);
   };
 
@@ -113,12 +120,10 @@ const ActionDropdown = ({
             >
               Edit
             </a>
+            {/* --- PERUBAHAN PADA ONCLICK DI SINI --- */}
             <a
               href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                handleAction(onComplete);
-              }}
+              onClick={handleDirectComplete}
               className="action-menu-item-success"
             >
               Selesaikan
