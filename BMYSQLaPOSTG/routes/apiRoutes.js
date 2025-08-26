@@ -639,4 +639,55 @@ router.get("/reports", async (req, res) => {
   }
 });
 
+/**
+ * ENDPOINT BARU: Mengembalikan WO dari Laporan (kebalikan dari 'complete')
+ * Metode: POST
+ * URL: /api/reports/:incident/reopen
+ */
+router.post("/reports/:incident/reopen", async (req, res) => {
+  const { incident } = req.params;
+  const conn = await mysqlPool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 1. Ambil data dari tabel 'reports'
+    const [rows] = await conn.query(
+      "SELECT * FROM reports WHERE incident = ?",
+      [incident]
+    );
+    if (rows.length === 0) {
+      await conn.rollback();
+      return res
+        .status(404)
+        .json({ success: false, message: "Laporan tidak ditemukan." });
+    }
+    const reportData = rows[0];
+
+    // 2. Masukkan kembali ke tabel 'work_orders'
+    // Menggunakan REPLACE INTO untuk menimpa data jika incident yang sama sudah ada
+    const columns = Object.keys(reportData);
+    const values = Object.values(reportData);
+    const insertQuery = `REPLACE INTO work_orders (${columns
+      .map((c) => `\`${c}\``)
+      .join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`;
+    await conn.query(insertQuery, values);
+
+    // 3. Hapus dari tabel 'reports'
+    await conn.query("DELETE FROM reports WHERE incident = ?", [incident]);
+
+    await conn.commit();
+    res.json({
+      success: true,
+      message: "Work order telah berhasil dikembalikan dari laporan.",
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error("Gagal mengembalikan work order dari laporan:", err);
+    res.status(500).json({ success: false, error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
+
 module.exports = router;
