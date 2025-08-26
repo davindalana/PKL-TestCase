@@ -2,11 +2,8 @@ const express = require("express");
 const router = express.Router();
 const mysqlPool = require("../config/dbMysql");
 
-/**
- * ENDPOINT: Menerima data alamat dan menyimpan ke tabel 'data_layanan' di MySQL.
- * Metode: POST
- * URL: /api/save-addresses-to-mysql
- */
+// ENDPOINT: Menerima data alamat dan menyimpan ke tabel 'data_layanan' di MySQL.
+// Metode: POST
 router.post("/save-addresses-to-mysql", async (req, res) => {
   const data = req.body;
 
@@ -50,11 +47,8 @@ router.post("/save-addresses-to-mysql", async (req, res) => {
   }
 });
 
-/**
- * ENDPOINT: Menyinkronkan semua alamat dari 'data_layanan' ke 'work_orders' (MySQL-only)
- * Metode: POST
- * URL: /api/sync-to-mysql
- */
+// ENDPOINT: Menyinkronkan semua alamat dari 'data_layanan' ke 'work_orders' (MySQL-only)
+// Metode: POST
 router.post("/sync-to-mysql", async (req, res) => {
   const conn = await mysqlPool.getConnection();
   try {
@@ -85,6 +79,8 @@ router.post("/sync-to-mysql", async (req, res) => {
   }
 });
 
+// ENDPOINT: Melihat semua data Work Order dari MySQL
+// Metode: GET
 router.get("/view-mysql", async (req, res) => {
   try {
     const [rows] = await mysqlPool.query("SELECT * FROM work_orders");
@@ -95,11 +91,8 @@ router.get("/view-mysql", async (req, res) => {
   }
 });
 
-/**
- * ENDPOINT 3: Menerima data Work Order dan menyimpan ke MySQL
- * Metode: POST
- * URL: /api/work-orders
- */
+// ENDPOINT 3: Menerima data Work Order dan menyimpan ke MySQL
+// Metode: POST
 router.post("/work-orders", async (req, res) => {
   const data = req.body;
 
@@ -265,11 +258,8 @@ router.delete("/work-orders/:incident", async (req, res) => {
   }
 });
 
-/**
- * ENDPOINT: Menerima & Sinkronisasi Massal Work Order (VERSI BARU: SEMUA DI MYSQL)
- * Metode: POST
- * URL: /api/mypost
- */
+// ENDPOINT: Menerima data work order, menyimpan ke MySQL, dan sinkronisasi alamat
+// Metode: POST
 router.post("/mypost", async (req, res) => {
   const data = req.body;
 
@@ -438,11 +428,8 @@ router.post("/mypost", async (req, res) => {
   }
 });
 
-/**
- * ENDPOINT: Menerima data workzones
- * Metode: GET
- * URL: /api/workzones
- */
+// ENDPOINT: Mengambil daftar workzone unik dari MySQL
+// Metode: GET
 router.get("/workzones", async (req, res) => {
   try {
     // Gunakan mysqlPool dan format query untuk mysql2
@@ -459,10 +446,8 @@ router.get("/workzones", async (req, res) => {
   }
 });
 
-/**
- * ENDPOINT DIPERBAIKI: Mengambil pemetaan workzone
- * URL: /api/workzone-map
- */
+// ENDPOINT: Mengambil peta workzone beserta korlap dari MySQL
+// Metode: GET
 router.get("/workzone-map", async (req, res) => {
   try {
     const [rows] = await mysqlPool.query(
@@ -486,10 +471,8 @@ router.get("/workzone-map", async (req, res) => {
   }
 });
 
-/**
- * ENDPOINT DIPERBAIKI: Mengedit Work Order
- * URL: /api/work-orders/:incident
- */
+// ENDPOINT DIPERBAIKI TOTAL: Mengedit Work Order
+// Metode: PUT
 router.put("/work-orders/:incident", async (req, res) => {
   const { incident } = req.params;
   const data = req.body;
@@ -498,32 +481,53 @@ router.put("/work-orders/:incident", async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    // 1. Tentukan kolom mana saja yang boleh diubah
-    const allowedUpdateColumns = [
-      'sektor', 'workzone', 'korlap', 'status', 'alamat', 'customer_name', 
-      'summary', 'reported_by', 'contact_phone' // Tambahkan kolom lain jika perlu
+    // **LANGKAH 1: IDENTIFIKASI KOLOM TANGGAL**
+    const datetimeColumns = [
+      'reported_date', 'status_date', 'booking_date',
+      'resolve_date', 'date_modified', 'last_update_worklog'
     ];
-    
-    const keysToUpdate = Object.keys(data).filter(key => allowedUpdateColumns.includes(key));
-    
+
+    // **LANGKAH 2: KONVERSI NILAI TANGGAL SEBELUM DISIMPAN**
+    for (const key of Object.keys(data)) {
+      // Jika kunci adalah kolom tanggal dan memiliki nilai
+      if (datetimeColumns.includes(key) && data[key]) {
+        try {
+          // Ubah format 'YYYY-MM-DDTHH:mm:ss.sssZ' menjadi 'YYYY-MM-DD HH:mm:ss'
+          data[key] = new Date(data[key]).toISOString().slice(0, 19).replace('T', ' ');
+        } catch (e) {
+          // Jika format tanggal tidak valid, jadikan null agar tidak error
+          console.error(`Format tanggal tidak valid untuk kolom ${key}:`, data[key]);
+          data[key] = null;
+        }
+      }
+    }
+
+    // 2. Lakukan proses UPDATE ke tabel work_orders
+    const keysToUpdate = Object.keys(data).filter(key => key !== 'incident');
     if (keysToUpdate.length === 0) {
       await conn.rollback();
       return res.status(400).json({ success: false, message: "Tidak ada data valid untuk diperbarui." });
     }
-
     const valuesToUpdate = keysToUpdate.map(key => data[key]);
     const setClauses = keysToUpdate.map(k => `\`${k}\` = ?`).join(', ');
-
-    // 2. Lakukan proses UPDATE ke database
     const updateQuery = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
     await conn.query(updateQuery, [...valuesToUpdate, incident]);
 
-    // 3. **LANGKAH KUNCI**: Setelah UPDATE berhasil, ambil kembali data yang sudah lengkap
+    // 3. **LANGKAH BARU**: Lakukan sinkronisasi alamat untuk 'service_no' yang relevan
+    if (data.service_no) {
+      const syncQuery = `
+        UPDATE work_orders wo
+        JOIN data_layanan dl ON wo.service_no = dl.service_no
+        SET wo.alamat = dl.alamat
+        WHERE wo.service_no = ?;
+      `;
+      await conn.query(syncQuery, [data.service_no]);
+      console.log(`Sinkronisasi alamat dijalankan untuk service_no: ${data.service_no}`);
+    }
+
+    // 4. Ambil kembali data yang sudah lengkap untuk dikirim ke frontend
     const [updatedRows] = await conn.query(
-      `SELECT wo.*, wd.sektor 
-       FROM work_orders wo
-       LEFT JOIN workzone_details wd ON wo.workzone = wd.workzone
-       WHERE wo.incident = ?`,
+      `SELECT * FROM work_orders WHERE incident = ?`,
       [incident]
     );
 
@@ -533,10 +537,9 @@ router.put("/work-orders/:incident", async (req, res) => {
       return res.status(404).json({ success: false, message: "Work order tidak ditemukan setelah update." });
     }
 
-    // 4. Kirim kembali data yang sudah 100% benar dan terbaru sebagai respons
     res.json({
       success: true,
-      message: "Work order berhasil diperbarui.",
+      message: `Work order berhasil diperbarui.`,
       data: updatedRows[0]
     });
 
@@ -549,7 +552,9 @@ router.put("/work-orders/:incident", async (req, res) => {
   }
 });
 
+
 // ENDPOINT BARU: Memindahkan WO ke Laporan
+// Metode: POST
 router.post("/work-orders/:incident/complete", async (req, res) => {
   const { incident } = req.params;
   const conn = await mysqlPool.getConnection();
@@ -595,6 +600,7 @@ router.post("/work-orders/:incident/complete", async (req, res) => {
 });
 
 // ENDPOINT BARU: Mengambil data dari tabel Laporan
+// Metode: GET
 router.get("/reports", async (req, res) => {
   try {
     const [rows] = await mysqlPool.query(
@@ -607,11 +613,8 @@ router.get("/reports", async (req, res) => {
   }
 });
 
-/**
- * ENDPOINT BARU: Mengembalikan WO dari Laporan (kebalikan dari 'complete')
- * Metode: POST
- * URL: /api/reports/:incident/reopen
- */
+// ENDPOINT BARU: Mengembalikan laporan ke work_orders
+// Metode: POST
 router.post("/reports/:incident/reopen", async (req, res) => {
   const { incident } = req.params;
   const conn = await mysqlPool.getConnection();
@@ -656,6 +659,5 @@ router.post("/reports/:incident/reopen", async (req, res) => {
     conn.release();
   }
 });
-
 
 module.exports = router;
