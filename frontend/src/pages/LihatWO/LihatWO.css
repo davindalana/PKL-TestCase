@@ -201,7 +201,6 @@
   vertical-align: middle;
   background: #fff;
   transition: background-color 0.2s ease;
-  position: relative; /* <-- TAMBAHKAN INI */
 }
 .wo-table tbody tr:nth-child(even) {
   background-color: #f8fafc;
@@ -221,9 +220,7 @@
 .aksi-cell {
   display: flex;
   gap: 0.5rem;
-  min-width: auto;
-  position: relative; 
-  overflow: visible; /* <-- PASTIKAN INI ADA */
+  min-width: 380px;
 }
 .data-cell.truncate {
   font-size: 0.9rem;
