@@ -72,6 +72,7 @@ export const WorkOrderRow = memo(({
             onEdit={onEdit}
             onDelete={onDelete}
             onComplete={onComplete}
+            
           />
         </td>
       {allKeys

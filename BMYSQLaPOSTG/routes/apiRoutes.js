@@ -266,65 +266,6 @@ router.delete("/work-orders/:incident", async (req, res) => {
 });
 
 /**
- * ENDPOINT DIPERBAIKI TOTAL: Mengedit Work Order
- * URL: /api/work-orders/:incident
- */
-// router.put("/work-orders/:incident", async (req, res) => {
-//   const { incident } = req.params;
-//   const data = req.body;
-//   const conn = await mysqlPool.getConnection();
-
-//   try {
-//     await conn.beginTransaction();
-
-//     const allowedUpdateColumns = [
-//       'sektor', 'workzone', 'korlap', 'status', 'alamat', 'customer_name', 'summary'
-//       // Tambahkan kolom lain yang bisa diubah jika perlu
-//     ];
-    
-//     const keysToUpdate = Object.keys(data).filter(key => allowedUpdateColumns.includes(key));
-    
-//     if (keysToUpdate.length === 0) {
-//       await conn.rollback();
-//       return res.status(400).json({ success: false, message: "Tidak ada data untuk diupdate." });
-//     }
-
-//     const valuesToUpdate = keysToUpdate.map(key => data[key]);
-//     const setClauses = keysToUpdate.map(k => `\`${k}\` = ?`).join(', ');
-
-//     // 1. Lakukan proses UPDATE ke database
-//     const updateQuery = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
-//     await conn.query(updateQuery, [...valuesToUpdate, incident]);
-
-//     // 2. **LANGKAH KUNCI**: Setelah UPDATE, ambil kembali data yang sudah lengkap dari database
-//     const [updatedRows] = await conn.query(
-//       `SELECT * FROM work_orders WHERE incident = ?`,
-//       [incident]
-//     );
-
-//     await conn.commit();
-
-//     if (updatedRows.length === 0) {
-//       return res.status(404).json({ success: false, message: "Work order tidak ditemukan." });
-//     }
-
-//     // 3. Kirim kembali data yang 100% benar dan terbaru sebagai respons
-//     res.json({
-//       success: true,
-//       message: "Work order berhasil diperbarui.",
-//       data: updatedRows[0]
-//     });
-
-//   } catch (err) {
-//     await conn.rollback();
-//     console.error("Gagal mengedit work order:", err);
-//     res.status(500).json({ success: false, error: err.message });
-//   } finally {
-//     conn.release();
-//   }
-// });
-
-/**
  * ENDPOINT: Menerima & Sinkronisasi Massal Work Order (VERSI BARU: SEMUA DI MYSQL)
  * Metode: POST
  * URL: /api/mypost
