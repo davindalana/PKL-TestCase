@@ -19,32 +19,33 @@
   background-color: #e9ecef;
 }
 
-.action-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
+.action-menu-portal {
+  margin-top: 4px; /* Beri sedikit jarak dari tombol */
   background-color: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-width: 160px;
   padding: 0.5rem 0;
-  margin-top: 4px;
   display: flex;
   flex-direction: column;
-  z-index: 100; /* <-- TAMBAHKAN INI */
+  z-index: 1200;
+  /* --- PERUBAHAN DI SINI --- */
+  /* Geser menu 50% ke kiri dari lebarnya sendiri untuk membuatnya center */
+  transform: translateX(-50%);
 }
 
-.action-menu a {
+.action-menu-portal a {
   padding: 0.6rem 1rem;
   text-decoration: none;
   color: #2d3748;
   font-size: 0.9rem;
   display: block;
   white-space: nowrap;
+  transition: background-color 0.2s ease;
 }
 
-.action-menu a:hover {
+.action-menu-portal a:hover {
   background-color: #f7fafc;
 }
 
@@ -61,6 +62,7 @@
 .action-menu-item-danger:hover {
   background-color: #fff5f5 !important;
 }
+
 .action-menu-item-success {
   color: #2f855a !important;
 }
