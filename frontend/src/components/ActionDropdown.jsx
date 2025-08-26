@@ -1,4 +1,5 @@
 // src/components/ActionDropdown.jsx
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import "./ActionDropdown.css";
@@ -50,23 +51,20 @@ const ActionDropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const handleAction = (action) => {
-    // Fungsi ini tetap berguna untuk aksi yang butuh seluruh objek 'item'
-    action(item);
-    setIsOpen(false);
-  };
-
-  const handleDirectDelete = (e) => {
+  /**
+   * Fungsi terpusat untuk menangani semua aksi dari menu dropdown.
+   * Menerima fungsi aksi (misalnya onEdit, onDelete) sebagai argumen.
+   */
+  const handleAction = (e, action) => {
     e.preventDefault();
-    onDelete(item.incident); // Mengirim ID
-    setIsOpen(false);
-  };
-
-  // --- PENAMBAHAN FUNGSI BARU DI SINI ---
-  // Fungsi ini khusus untuk aksi "Selesaikan" agar hanya mengirim ID.
-  const handleDirectComplete = (e) => {
-    e.preventDefault();
-    onComplete(item.incident); // Mengirim ID
+    // Memanggil fungsi aksi dengan 'item' atau 'item.incident' sesuai kebutuhan.
+    // Asumsi: onFormat, onCopy, onEdit butuh seluruh objek 'item'.
+    // Asumsi: onDelete dan onComplete hanya butuh 'item.incident'.
+    if (action === onDelete || action === onComplete) {
+      action(item.incident);
+    } else {
+      action(item);
+    }
     setIsOpen(false);
   };
 
@@ -93,37 +91,18 @@ const ActionDropdown = ({
               left: `${menuPosition.left}px`,
             }}
           >
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                handleAction(onFormat);
-              }}
-            >
+            <a href="#" onClick={(e) => handleAction(e, onFormat)}>
               Lihat Format
             </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                handleAction(onCopy);
-              }}
-            >
+            <a href="#" onClick={(e) => handleAction(e, onCopy)}>
               Salin
             </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                handleAction(onEdit);
-              }}
-            >
+            <a href="#" onClick={(e) => handleAction(e, onEdit)}>
               Edit
             </a>
-            {/* --- PERUBAHAN PADA ONCLICK DI SINI --- */}
             <a
               href="#"
-              onClick={handleDirectComplete}
+              onClick={(e) => handleAction(e, onComplete)}
               className="action-menu-item-success"
             >
               Selesaikan
@@ -131,7 +110,7 @@ const ActionDropdown = ({
             <div className="action-menu-divider"></div>
             <a
               href="#"
-              onClick={handleDirectDelete}
+              onClick={(e) => handleAction(e, onDelete)}
               className="action-menu-item-danger"
             >
               Hapus
