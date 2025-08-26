@@ -1,15 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import "./Report.css";
 
 const API_BASE_URL = "http://localhost:3000/api";
+const ITEMS_PER_PAGE = 15;
 
 const Report = () => {
-  const [reports, setReports] = useState([]);
+  const [allReports, setAllReports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [sortConfig, setSortConfig] = useState({
+    key: "reported_date",
+    direction: "descending",
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [actionLoading, setActionLoading] = useState(null);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -21,7 +30,7 @@ const Report = () => {
           throw new Error("Gagal mengambil data laporan dari server.");
         }
         const result = await response.json();
-        setReports(Array.isArray(result.data) ? result.data : []);
+        setAllReports(Array.isArray(result.data) ? result.data : []);
       } catch (err) {
         setError(err.message);
         console.error("Fetch Error:", err);
@@ -29,65 +38,138 @@ const Report = () => {
         setIsLoading(false);
       }
     };
-
     fetchReports();
   }, []);
 
+  const filteredReports = useMemo(() => {
+    let processedData = [...allReports];
+
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const startDate = new Date();
+      if (dateFilter === "1m") startDate.setMonth(now.getMonth() - 1);
+      if (dateFilter === "3m") startDate.setMonth(now.getMonth() - 3);
+      if (dateFilter === "6m") startDate.setMonth(now.getMonth() - 6);
+      if (dateFilter === "1y") startDate.setFullYear(now.getFullYear() - 1);
+      processedData = processedData.filter(
+        (report) => new Date(report.reported_date) >= startDate
+      );
+    }
+
+    if (searchTerm) {
+      const lowercasedTerm = searchTerm.toLowerCase();
+      processedData = processedData.filter((report) =>
+        Object.values(report).some((value) =>
+          String(value).toLowerCase().includes(lowercasedTerm)
+        )
+      );
+    }
+
+    if (sortConfig.key) {
+      processedData.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        if (aValue < bValue)
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        if (aValue > bValue)
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return processedData;
+  }, [allReports, searchTerm, dateFilter, sortConfig]);
+
+  const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
+  const paginatedReports = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredReports.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredReports, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFilter]);
+
+  const handleReopen = async (incident) => {
+    if (
+      window.confirm(
+        `Apakah Anda yakin ingin membuka kembali tiket ${incident} dan memindahkannya ke Work Order?`
+      )
+    ) {
+      setActionLoading(incident);
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/reports/${incident}/reopen`,
+          { method: "POST" }
+        );
+        const result = await response.json();
+        if (!response.ok || !result.success)
+          throw new Error(result.message || "Gagal membuka kembali tiket.");
+        setAllReports((prev) =>
+          prev.filter((report) => report.incident !== incident)
+        );
+        alert("Tiket berhasil dibuka kembali!");
+      } catch (err) {
+        console.error("Re-open Error:", err);
+        alert(`Error: ${err.message}`);
+      } finally {
+        setActionLoading(null);
+      }
+    }
+  };
+
   const getTableHeaders = () => {
-    if (reports.length === 0) return [];
-    // IMPROVEMENT: Sort keys alphabetically for consistent column order
-    return Object.keys(reports[0]).sort();
+    if (allReports.length === 0) return [];
+    return Object.keys(allReports[0]).sort();
   };
 
-  const handleExportExcel = () => {
-    if (reports.length === 0) {
+  const requestSort = (key) => {
+    let direction = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const handleExport = (format) => {
+    const dataToExport = filteredReports;
+    if (dataToExport.length === 0) {
       alert("Tidak ada data untuk diekspor.");
       return;
     }
-    const worksheet = XLSX.utils.json_to_sheet(reports);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Tiket Selesai");
-    XLSX.writeFile(workbook, "laporan_tiket_selesai.xlsx");
-  };
-
-  const handleExportCSV = () => {
-    if (reports.length === 0) {
-      alert("Tidak ada data untuk diekspor.");
-      return;
+    const filename = `laporan_tiket_selesai_${new Date()
+      .toISOString()
+      .slice(0, 10)}`;
+    if (format === "excel") {
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan");
+      XLSX.writeFile(workbook, `${filename}.xlsx`);
+    } else if (format === "csv") {
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
+      const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `${filename}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else if (format === "pdf") {
+      const doc = new jsPDF({ orientation: "landscape" });
+      const headers = getTableHeaders();
+      const body = dataToExport.map((row) =>
+        headers.map((header) => row[header] ?? "")
+      );
+      doc.autoTable({
+        head: [headers.map((h) => h.replace(/_/g, " ").toUpperCase())],
+        body: body,
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [102, 126, 234] },
+        margin: { top: 10 },
+      });
+      doc.save(`${filename}.pdf`);
     }
-    const worksheet = XLSX.utils.json_to_sheet(reports);
-    const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
-    const blob = new Blob([csvOutput], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "laporan_tiket_selesai.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleExportPDF = () => {
-    if (reports.length === 0) {
-      alert("Tidak ada data untuk diekspor.");
-      return;
-    }
-    const doc = new jsPDF({ orientation: "landscape" });
-    const headers = getTableHeaders();
-    const body = reports.map((row) =>
-      headers.map((header) => row[header] ?? "")
-    );
-
-    doc.autoTable({
-      head: [headers.map((h) => h.replace(/_/g, " ").toUpperCase())],
-      body: body,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [102, 126, 234] },
-      margin: { top: 10 },
-    });
-
-    doc.save("laporan_tiket_selesai.pdf");
   };
 
   if (isLoading) {
@@ -105,8 +187,7 @@ const Report = () => {
     return (
       <div className="report-container">
         <div className="error-container">
-          <h2> Gagal Memuat Laporan 🔌</h2>
-          <p>{error}</p>
+          <h2>Gagal Memuat Laporan 🔌</h2> <p>{error}</p>
         </div>
       </div>
     );
@@ -118,42 +199,95 @@ const Report = () => {
         <h1>📊 Laporan Tiket Selesai</h1>
       </div>
 
-      <div className="export-controls">
-        <div className="export-buttons">
-          <button onClick={handleExportExcel} className="btn btn-primary">
+      <div className="controls-panel">
+        <div className="export-controls">
+          <button
+            onClick={() => handleExport("excel")}
+            className="btn btn-primary"
+          >
             Ekspor Excel
           </button>
-          <button onClick={handleExportCSV} className="btn btn-secondary">
+          <button
+            onClick={() => handleExport("csv")}
+            className="btn btn-secondary"
+          >
             Ekspor CSV
           </button>
-          <button onClick={handleExportPDF} className="btn btn-info">
+          <button onClick={() => handleExport("pdf")} className="btn btn-info">
             Ekspor PDF
           </button>
         </div>
         <div className="report-summary">
-          Total Tiket Selesai: <strong>{reports.length}</strong>
+          Menampilkan: <strong>{filteredReports.length}</strong> dari{" "}
+          <strong>{allReports.length}</strong>
         </div>
+      </div>
+
+      <div className="filter-container">
+        <input
+          type="text"
+          placeholder="🔍 Cari di semua kolom..."
+          className="search-input"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="date-filter-dropdown"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+        >
+          <option value="all">Semua Waktu</option>
+          <option value="1m">1 Bulan Terakhir</option>
+          <option value="3m">3 Bulan Terakhir</option>
+          <option value="6m">6 Bulan Terakhir</option>
+          <option value="1y">1 Tahun Terakhir</option>
+        </select>
       </div>
 
       <div className="table-container">
         <table className="report-table">
           <thead>
             <tr>
+              {/* ## PERUBAHAN DI SINI: Kolom Aksi dipindah ke paling kiri ## */}
+              <th className="action-header sticky-col">AKSI</th>
               {getTableHeaders().map((key) => (
-                <th key={key}>{key.replace(/_/g, " ").toUpperCase()}</th>
+                <th
+                  key={key}
+                  onClick={() => requestSort(key)}
+                  className="sortable-header"
+                >
+                  {key.replace(/_/g, " ").toUpperCase()}
+                  {sortConfig.key === key && (
+                    <span className="sort-indicator">
+                      {sortConfig.direction === "ascending" ? " ▲" : " ▼"}
+                    </span>
+                  )}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {reports.length === 0 ? (
+            {paginatedReports.length === 0 ? (
               <tr>
-                <td colSpan={getTableHeaders().length || 1} className="no-data">
-                  Tidak ada data laporan yang tersedia.
+                <td colSpan={getTableHeaders().length + 1} className="no-data">
+                  Tidak ada data laporan yang cocok.
                 </td>
               </tr>
             ) : (
-              reports.map((report, index) => (
-                <tr key={report.incident || index}>
+              paginatedReports.map((report) => (
+                <tr key={report.incident}>
+                  {/* ## PERUBAHAN DI SINI: Kolom Aksi dipindah ke paling kiri ## */}
+                  <td className="action-cell sticky-col">
+                    <button
+                      onClick={() => handleReopen(report.incident)}
+                      className="btn btn-reopen"
+                      disabled={actionLoading === report.incident}
+                    >
+                      {actionLoading === report.incident
+                        ? "Memproses..."
+                        : "Re-open"}
+                    </button>
+                  </td>
                   {getTableHeaders().map((key) => (
                     <td
                       key={key}
@@ -169,6 +303,27 @@ const Report = () => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination-controls">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            &laquo; Sebelumnya
+          </button>
+          <span>
+            Halaman <strong>{currentPage}</strong> dari{" "}
+            <strong>{totalPages}</strong>
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Berikutnya &raquo;
+          </button>
+        </div>
+      )}
     </div>
   );
 };
