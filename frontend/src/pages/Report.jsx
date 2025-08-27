@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import "./Report.css";
 
-import { Bar } from 'react-chartjs-2';
+import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,9 +13,8 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
 
-// 2. Daftarkan komponen Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -62,69 +61,6 @@ const Report = () => {
     fetchReports();
   }, []);
 
-  // 3. Proses data untuk grafik menggunakan useMemo
-  const chartData = useMemo(() => {
-    const monthlyCounts = {};
-
-    allReports.forEach(report => {
-      const date = new Date(report.reported_date);
-      const monthYear = `${date.toLocaleString('id-ID', { month: 'long' })} ${date.getFullYear()}`;
-
-      if (!monthlyCounts[monthYear]) {
-        monthlyCounts[monthYear] = 0;
-      }
-      monthlyCounts[monthYear]++;
-    });
-
-    // Urutkan data berdasarkan bulan dan tahun
-    const sortedLabels = Object.keys(monthlyCounts).sort((a, b) => {
-      const [monthA, yearA] = a.split(' ');
-      const [monthB, yearB] = b.split(' ');
-      const dateA = new Date(`${monthA} 1, ${yearA}`);
-      const dateB = new Date(`${monthB} 1, ${yearB}`);
-      return dateA - dateB;
-    });
-
-    const dataValues = sortedLabels.map(label => monthlyCounts[label]);
-
-    return {
-      labels: sortedLabels,
-      datasets: [
-        {
-          label: 'Tiket Selesai per Bulan',
-          data: dataValues,
-          backgroundColor: 'rgba(102, 126, 234, 0.6)',
-          borderColor: 'rgba(102, 126, 234, 1)',
-          borderWidth: 1,
-        },
-      ],
-    };
-  }, [allReports]);
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'Tren Tiket Selesai Bulanan',
-        font: {
-          size: 18,
-        }
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          stepSize: 1
-        }
-      }
-    }
-  };
-
   const filteredReports = useMemo(() => {
     let processedData = [...allReports];
 
@@ -163,6 +99,71 @@ const Report = () => {
 
     return processedData;
   }, [allReports, searchTerm, dateFilter, sortConfig]);
+
+  const chartData = useMemo(() => {
+    const monthlyCounts = {};
+
+    // Gunakan 'filteredReports' sebagai sumber data
+    filteredReports.forEach((report) => {
+      const date = new Date(report.reported_date);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}`;
+
+      if (!monthlyCounts[key]) {
+        monthlyCounts[key] = 0;
+      }
+      monthlyCounts[key]++;
+    });
+
+    const sortedKeys = Object.keys(monthlyCounts).sort();
+
+    const sortedLabels = sortedKeys.map((key) => {
+      const [year, month] = key.split("-");
+      const date = new Date(year, month - 1);
+      return date.toLocaleString("id-ID", { month: "long", year: "numeric" });
+    });
+
+    const dataValues = sortedKeys.map((key) => monthlyCounts[key]);
+
+    return {
+      labels: sortedLabels,
+      datasets: [
+        {
+          label: "Tiket Selesai per Bulan",
+          data: dataValues,
+          backgroundColor: "rgba(102, 126, 234, 0.6)",
+          borderColor: "rgba(102, 126, 234, 1)",
+          borderWidth: 1,
+        },
+      ],
+    };
+  }, [filteredReports]); // Ubah dependensi ke 'filteredReports'
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      title: {
+        display: true,
+        text: "Tren Tiket Selesai Bulanan",
+        font: {
+          size: 18,
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1,
+        },
+      },
+    },
+  };
 
   const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
   const paginatedReports = useMemo(() => {
@@ -307,13 +308,6 @@ const Report = () => {
         </div>
       </div>
 
-      <div className="chart-container">
-        {allReports.length > 0 ? (
-          <Bar options={chartOptions} data={chartData} />
-        ) : (
-          !isLoading && <p className="no-data">Tidak ada data untuk ditampilkan di grafik.</p>
-        )}
-      </div>
       <div className="filter-container">
         <input
           type="text"
@@ -339,7 +333,6 @@ const Report = () => {
         <table className="report-table">
           <thead>
             <tr>
-              {/* ## PERUBAHAN DI SINI: Kolom Aksi dipindah ke paling kiri ## */}
               <th className="action-header sticky-col">AKSI</th>
               {getTableHeaders().map((key) => (
                 <th
@@ -367,7 +360,6 @@ const Report = () => {
             ) : (
               paginatedReports.map((report) => (
                 <tr key={report.incident}>
-                  {/* ## PERUBAHAN DI SINI: Kolom Aksi dipindah ke paling kiri ## */}
                   <td className="action-cell sticky-col">
                     <button
                       onClick={() => handleReopen(report.incident)}
@@ -415,6 +407,18 @@ const Report = () => {
           </button>
         </div>
       )}
+
+      <div className="chart-container">
+        {filteredReports.length > 0 ? ( // Diubah agar menampilkan pesan jika hasil filter kosong
+          <Bar options={chartOptions} data={chartData} />
+        ) : (
+          !isLoading && (
+            <p className="no-data">
+              Tidak ada data untuk ditampilkan pada rentang waktu ini.
+            </p>
+          )
+        )}
+      </div>
     </div>
   );
 };
