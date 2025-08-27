@@ -522,7 +522,6 @@ router.put("/work-orders/:incident", async (req, res) => {
         WHERE wo.service_no = ?;
       `;
       await conn.query(syncQuery, [data.service_no]);
-      console.log(`Sinkronisasi alamat dijalankan untuk service_no: ${data.service_no}`);
     }
 
     // 4. Ambil kembali data yang sudah lengkap untuk dikirim ke frontend

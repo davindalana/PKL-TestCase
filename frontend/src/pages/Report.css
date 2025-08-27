@@ -332,3 +332,11 @@ tr:hover td.sticky-col {
   background-color: #fbd38d;
   cursor: wait;
 }
+
+.chart-container {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.07);
+  margin-bottom: 1.5rem;
+}

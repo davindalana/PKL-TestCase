@@ -4,6 +4,27 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import "./Report.css";
 
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+// 2. Daftarkan komponen Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
 const API_BASE_URL = "http://localhost:3000/api";
 const ITEMS_PER_PAGE = 15;
 
@@ -40,6 +61,69 @@ const Report = () => {
     };
     fetchReports();
   }, []);
+
+  // 3. Proses data untuk grafik menggunakan useMemo
+  const chartData = useMemo(() => {
+    const monthlyCounts = {};
+
+    allReports.forEach(report => {
+      const date = new Date(report.reported_date);
+      const monthYear = `${date.toLocaleString('id-ID', { month: 'long' })} ${date.getFullYear()}`;
+
+      if (!monthlyCounts[monthYear]) {
+        monthlyCounts[monthYear] = 0;
+      }
+      monthlyCounts[monthYear]++;
+    });
+
+    // Urutkan data berdasarkan bulan dan tahun
+    const sortedLabels = Object.keys(monthlyCounts).sort((a, b) => {
+      const [monthA, yearA] = a.split(' ');
+      const [monthB, yearB] = b.split(' ');
+      const dateA = new Date(`${monthA} 1, ${yearA}`);
+      const dateB = new Date(`${monthB} 1, ${yearB}`);
+      return dateA - dateB;
+    });
+
+    const dataValues = sortedLabels.map(label => monthlyCounts[label]);
+
+    return {
+      labels: sortedLabels,
+      datasets: [
+        {
+          label: 'Tiket Selesai per Bulan',
+          data: dataValues,
+          backgroundColor: 'rgba(102, 126, 234, 0.6)',
+          borderColor: 'rgba(102, 126, 234, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+  }, [allReports]);
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Tren Tiket Selesai Bulanan',
+        font: {
+          size: 18,
+        }
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1
+        }
+      }
+    }
+  };
 
   const filteredReports = useMemo(() => {
     let processedData = [...allReports];
@@ -223,6 +307,13 @@ const Report = () => {
         </div>
       </div>
 
+      <div className="chart-container">
+        {allReports.length > 0 ? (
+          <Bar options={chartOptions} data={chartData} />
+        ) : (
+          !isLoading && <p className="no-data">Tidak ada data untuk ditampilkan di grafik.</p>
+        )}
+      </div>
       <div className="filter-container">
         <input
           type="text"
