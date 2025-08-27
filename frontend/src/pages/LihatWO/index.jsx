@@ -10,9 +10,105 @@ import SortIcon from "../../components/SortIcon";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
+// Daftar lengkap semua kolom yang mungkin ada, berdasarkan gambar Anda.
+// Urutan item di sini menentukan urutan default kolom di tabel.
+const ALL_POSSIBLE_KEYS = [
+  "incident",
+  "ticket_id_gamas",
+  "external_ticket_id",
+  "customer_id",
+  "customer_name",
+  "service_id",
+  "service_no",
+  "summary",
+  "description_assignment",
+  "reported_date",
+  "reported_by",
+  "reported_priority",
+  "source_ticket",
+  "channel",
+  "contact_phone",
+  "contact_name",
+  "contact_email",
+  "status",
+  "status_date",
+  "booking_date",
+  "resolve_date",
+  "date_modified",
+  "last_update_worklog",
+  "closed_by",
+  "closed_reopen_by",
+  "guarantee_status",
+  "ttr_customer",
+  "ttr_agent",
+  "ttr_mitra",
+  "ttr_nasional",
+  "th_pending",
+  "th_region",
+  "th_witel",
+  "ttr_end_to_end",
+  "owner_group",
+  "owner",
+  "witel",
+  "workzone",
+  "region",
+  "subsidiary",
+  "territory_near_end",
+  "territory_far_end",
+  "customer_segment",
+  "customer_type",
+  "customer_category",
+  "service_type",
+  "slg",
+  "technology",
+  "lapul",
+  "gaul",
+  "onu_rx",
+  "pending_reason",
+  "incident_domain",
+  "symptom",
+  "hierarchy_path",
+  "solution",
+  "description_actual_solution",
+  "kode_produk",
+  "perangkat",
+  "technician",
+  "device_name",
+  "sn_ont",
+  "tipe_ont",
+  "manufacture_ont",
+  "impacted_site",
+  "cause",
+  "resolution",
+  "worklog_summary",
+  "classification_flag",
+  "realm",
+  "related_to_gamas",
+  "toc_result",
+  "scc_result",
+  "note",
+  "notes_eskalasi",
+  "rk_information",
+  "external_ticket_tier_3",
+  "classification_path",
+  "urgency",
+  "alamat",
+  "korlap",
+  "sektor",
+];
+
+// Daftar statis untuk filter status
+const ALL_STATUS_OPTIONS = [
+  "IN PROGRESS",
+  "PENDING",
+  "RESOLVED",
+  "CLOSED",
+  "OPEN",
+];
+
 const LihatWO = () => {
   const [woData, setWoData] = useState([]);
-  const [workzoneMap, setWorkzoneMap] = useState([]); // Sekarang akan menjadi array
+  const [workzoneMap, setWorkzoneMap] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,10 +118,17 @@ const LihatWO = () => {
   const [editItem, setEditItem] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState({});
   const [filter, setFilter] = useState({
-    status: "", sektor: "", workzone: "", korlap: "", witel: "",
+    status: "",
+    sektor: "",
+    workzone: "",
+    korlap: "",
+    witel: "",
   });
   const [selectedItems, setSelectedItems] = useState([]);
-  const [sortConfig, setSortConfig] = useState({ key: "incident", direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "incident",
+    direction: "asc",
+  });
   const [visibleKeys, setVisibleKeys] = useState(new Set());
   const [draftVisibleKeys, setDraftVisibleKeys] = useState(new Set());
   const [showColumnSelector, setShowColumnSelector] = useState(false);
@@ -46,12 +149,12 @@ const LihatWO = () => {
         }
 
         const woResult = await woResponse.json();
-        const workzoneMapResult = await workzoneMapResponse.json(); // Ini sekarang array
+        const workzoneMapResult = await workzoneMapResponse.json();
 
         setWoData(Array.isArray(woResult.data) ? woResult.data : []);
-        // Langsung simpan array dari API
-        setWorkzoneMap(Array.isArray(workzoneMapResult) ? workzoneMapResult : []);
-
+        setWorkzoneMap(
+          Array.isArray(workzoneMapResult) ? workzoneMapResult : []
+        );
       } catch (err) {
         console.error("Gagal mengambil data:", err);
         setError(err.message);
@@ -62,36 +165,36 @@ const LihatWO = () => {
     fetchData();
   }, []);
 
-  // Fungsi pembantu sekarang lebih sederhana dan andal
-  const getSektorForWorkzone = useCallback((workzone) => {
-    if (!workzone) return "";
-    const match = workzoneMap.find((m) => m.workzone === workzone);
-    return match ? match.sektor : "";
-  }, [workzoneMap]);
+  const getSektorForWorkzone = useCallback(
+    (workzone) => {
+      if (!workzone) return "";
+      const match = workzoneMap.find((m) => m.workzone === workzone);
+      return match ? match.sektor : "";
+    },
+    [workzoneMap]
+  );
 
-  const getKorlapsForWorkzone = useCallback((workzone) => {
-    if (!workzone) return [];
-    const match = workzoneMap.find((m) => m.workzone === workzone);
-    return match ? match.korlaps.sort() : [];
-  }, [workzoneMap]);
+  const getKorlapsForWorkzone = useCallback(
+    (workzone) => {
+      if (!workzone) return [];
+      const match = workzoneMap.find((m) => m.workzone === workzone);
+      return match ? match.korlaps.sort() : [];
+    },
+    [workzoneMap]
+  );
 
-  const getWorkzonesForSektor = useCallback((sektor) => {
-    if (!sektor) return [];
-    return workzoneMap
-      .filter((m) => m.sektor === sektor)
-      .map((m) => m.workzone)
-      .sort();
-  }, [workzoneMap]);
+  const getWorkzonesForSektor = useCallback(
+    (sektor) => {
+      if (!sektor) return [];
+      return workzoneMap
+        .filter((m) => m.sektor === sektor)
+        .map((m) => m.workzone)
+        .sort();
+    },
+    [workzoneMap]
+  );
 
-  // ... (sisa kode dari handleUpdateRow sampai akhir komponen tetap sama)
-  // Salin semua fungsi lainnya dari file asli Anda ke sini
-
-  const allKeys = useMemo(() => {
-    const keys = new Set(woData.flatMap((obj) => Object.keys(obj)));
-    if (!keys.has("korlap")) keys.add("korlap");
-    if (!keys.has("sektor")) keys.add("sektor");
-    return Array.from(keys);
-  }, [woData]);
+  const allKeys = useMemo(() => ALL_POSSIBLE_KEYS, []);
 
   useEffect(() => {
     if (allKeys.length > 0 && visibleKeys.size === 0) {
@@ -106,19 +209,17 @@ const LihatWO = () => {
     workzoneFilterOptions,
     korlapFilterOptions,
   } = useMemo(() => {
-    const statusSet = new Set(woData.map((d) => d.status).filter(Boolean));
-    const allSektors = [...new Set(workzoneMap.map((item) => item.sektor))].sort();
-
+    const allSektors = [
+      ...new Set(workzoneMap.map((item) => item.sektor)),
+    ].sort();
     const availableWorkzones = filter.sektor
       ? getWorkzonesForSektor(filter.sektor)
       : [...new Set(workzoneMap.map((i) => i.workzone))].sort();
-
     const availableKorlaps = filter.workzone
       ? getKorlapsForWorkzone(filter.workzone)
       : [...new Set(workzoneMap.flatMap((item) => item.korlaps))].sort();
-
     return {
-      statusOptions: Array.from(statusSet),
+      statusOptions: ALL_STATUS_OPTIONS,
       witelOptions: Array.from(
         new Set(woData.map((d) => d.witel).filter(Boolean))
       ).sort(),
@@ -189,14 +290,9 @@ const LihatWO = () => {
   }, []);
 
   const handleUpdateRow = async (originalItem, updatedFields) => {
-    console.log(`--- Langkah 2: handleUpdateRow dipanggil ---`);
-    console.log("Data asli:", originalItem.sektor, originalItem.workzone, originalItem.korlap);
-    console.log("Perubahan yang diterima:", updatedFields.sektor, updatedFields.workzone, updatedFields.korlap);
     const incidentId = originalItem.incident;
     const optimisticData = { ...originalItem, ...updatedFields };
-    console.log("2. [LihatWO] Data sebelum dikirim (Optimistic):", optimisticData.sektor, optimisticData.workzone, optimisticData.korlap);
     setUpdatingStatus((p) => ({ ...p, [incidentId]: true }));
-    console.log(originalItem.sektor);
     setWoData((prev) =>
       prev.map((d) => (d.incident === incidentId ? optimisticData : d))
     );
@@ -210,8 +306,6 @@ const LihatWO = () => {
         }
       );
       const result = await response.json();
-
-      console.log("3. [LihatWO] Data diterima dari server:", result.data.sektor, result.data.workzone, result.data.korlap, response.status);
       if (!result.success) {
         throw new Error(result.message || "Gagal menyimpan");
       }
@@ -229,30 +323,32 @@ const LihatWO = () => {
     }
   };
 
+  const handleEditSave = useCallback(
+    async (updatedItem) => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/work-orders/${editItem.incident}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedItem),
+          }
+        );
 
-  const handleEditSave = useCallback(async (updatedItem) => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/work-orders/${editItem.incident}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedItem),
-        }
-      );
+        const result = await response.json();
+        if (!result.success)
+          throw new Error(result.message || "Gagal menyimpan");
 
-      const result = await response.json();
-      if (!result.success)
-        throw new Error(result.message || "Gagal menyimpan");
-
-      setWoData((prev) =>
-        prev.map((d) => (d.incident === editItem.incident ? result.data : d))
-      );
-      setEditItem(null);
-    } catch (error) {
-      alert("Gagal update data: " + error.message);
-    }
-  }, [editItem]);
+        setWoData((prev) =>
+          prev.map((d) => (d.incident === editItem.incident ? result.data : d))
+        );
+        setEditItem(null);
+      } catch (error) {
+        alert("Gagal update data: " + error.message);
+      }
+    },
+    [editItem]
+  );
 
   const handleDelete = async (incident) => {
     if (window.confirm("Yakin ingin menghapus data ini?")) {
@@ -268,42 +364,52 @@ const LihatWO = () => {
     }
   };
 
-  const handleCompleteTicket = useCallback(async (incident) => {
-    const ticketToComplete = woData.find(item => item.incident === incident);
+  const handleCompleteTicket = useCallback(
+    async (incident) => {
+      const ticketToComplete = woData.find(
+        (item) => item.incident === incident
+      );
 
-    if (!ticketToComplete || !ticketToComplete.sektor) {
-      alert("⚠️ Gagal! Pastikan Sektor sudah dipilih sebelum menyelesaikan tiket.");
-      return;
-    }
-
-    if (
-      window.confirm(
-        "Apakah Anda yakin ingin menyelesaikan tiket ini? Data akan dipindahkan ke laporan."
-      )
-    ) {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/work-orders/${incident}/complete`,
-          {
-            method: "POST",
-          }
+      if (!ticketToComplete || !ticketToComplete.sektor) {
+        alert(
+          "⚠️ Gagal! Pastikan Sektor sudah dipilih sebelum menyelesaikan tiket."
         );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Gagal menyelesaikan tiket di server.");
-        }
-
-        setWoData((prev) => prev.filter((item) => item.incident !== incident));
-        setSelectedItems((prev) => prev.filter((item) => item !== incident));
-        alert("Tiket berhasil diselesaikan dan dipindahkan ke laporan.");
-
-      } catch (err) {
-        console.error("Gagal menyelesaikan tiket:", err);
-        alert("Gagal menyelesaikan tiket: " + err.message);
+        return;
       }
-    }
-  }, [woData]);
+
+      if (
+        window.confirm(
+          "Apakah Anda yakin ingin menyelesaikan tiket ini? Data akan dipindahkan ke laporan."
+        )
+      ) {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/work-orders/${incident}/complete`,
+            {
+              method: "POST",
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.error || "Gagal menyelesaikan tiket di server."
+            );
+          }
+
+          setWoData((prev) =>
+            prev.filter((item) => item.incident !== incident)
+          );
+          setSelectedItems((prev) => prev.filter((item) => item !== incident));
+          alert("Tiket berhasil diselesaikan dan dipindahkan ke laporan.");
+        } catch (err) {
+          console.error("Gagal menyelesaikan tiket:", err);
+          alert("Gagal menyelesaikan tiket: " + err.message);
+        }
+      }
+    },
+    [woData]
+  );
 
   const handleBulkDelete = useCallback(() => {
     if (
@@ -425,19 +531,29 @@ const LihatWO = () => {
             <div className="filter-group">
               <div className="filter-item">
                 <label>Status</label>
-                <select value={filter.status} onChange={(e) => handleFilterChange("status", e.target.value)}>
+                <select
+                  value={filter.status}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
+                >
                   <option value="">Semua Status</option>
                   {statusOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="filter-item">
                 <label>Witel</label>
-                <select value={filter.witel} onChange={(e) => handleFilterChange("witel", e.target.value)}>
+                <select
+                  value={filter.witel}
+                  onChange={(e) => handleFilterChange("witel", e.target.value)}
+                >
                   <option value="">Semua Witel</option>
                   {witelOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -445,28 +561,45 @@ const LihatWO = () => {
             <div className="filter-group">
               <div className="filter-item">
                 <label>Sektor</label>
-                <select value={filter.sektor} onChange={(e) => handleFilterChange("sektor", e.target.value)}>
+                <select
+                  value={filter.sektor}
+                  onChange={(e) => handleFilterChange("sektor", e.target.value)}
+                >
                   <option value="">Semua Sektor</option>
                   {sektorOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="filter-item">
                 <label>Workzone</label>
-                <select value={filter.workzone} onChange={(e) => handleFilterChange("workzone", e.target.value)}>
+                <select
+                  value={filter.workzone}
+                  onChange={(e) =>
+                    handleFilterChange("workzone", e.target.value)
+                  }
+                >
                   <option value="">Semua Workzone</option>
                   {workzoneFilterOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="filter-item">
                 <label>Korlap</label>
-                <select value={filter.korlap} onChange={(e) => handleFilterChange("korlap", e.target.value)}>
+                <select
+                  value={filter.korlap}
+                  onChange={(e) => handleFilterChange("korlap", e.target.value)}
+                >
                   <option value="">Semua Korlap</option>
                   {korlapFilterOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -474,10 +607,20 @@ const LihatWO = () => {
           </div>
         </div>
         <div className="action-section">
-          <button onClick={() => { setDraftVisibleKeys(new Set(visibleKeys)); setShowColumnSelector(true); }} className="btn btn-outline">
+          <button
+            onClick={() => {
+              setDraftVisibleKeys(new Set(visibleKeys));
+              setShowColumnSelector(true);
+            }}
+            className="btn btn-outline"
+          >
             ⚙️ Atur Kolom
           </button>
-          <button onClick={handleBulkDelete} className="btn btn-danger" disabled={selectedItems.length === 0}>
+          <button
+            onClick={handleBulkDelete}
+            className="btn btn-danger"
+            disabled={selectedItems.length === 0}
+          >
             🗑️ Hapus ({selectedItems.length})
           </button>
         </div>
@@ -489,14 +632,35 @@ const LihatWO = () => {
           <div className="column-selector-grid">
             {allKeys.map((key) => (
               <div key={key} className="column-item">
-                <input type="checkbox" id={`col-${key}`} checked={draftVisibleKeys.has(key)} onChange={() => setDraftVisibleKeys((prev) => { const newSet = new Set(prev); newSet.has(key) ? newSet.delete(key) : newSet.add(key); return newSet; })} />
+                <input
+                  type="checkbox"
+                  id={`col-${key}`}
+                  checked={draftVisibleKeys.has(key)}
+                  onChange={() =>
+                    setDraftVisibleKeys((prev) => {
+                      const newSet = new Set(prev);
+                      newSet.has(key) ? newSet.delete(key) : newSet.add(key);
+                      return newSet;
+                    })
+                  }
+                />
                 <label htmlFor={`col-${key}`}>{key.replace(/_/g, " ")}</label>
               </div>
             ))}
           </div>
           <div className="column-selector-actions">
-            <button onClick={() => setShowColumnSelector(false)} className="btn btn-outline">Batal</button>
-            <button onClick={handleApplyColumnChanges} className="btn btn-primary">Terapkan</button>
+            <button
+              onClick={() => setShowColumnSelector(false)}
+              className="btn btn-outline"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleApplyColumnChanges}
+              className="btn btn-primary"
+            >
+              Terapkan
+            </button>
           </div>
         </div>
       )}
@@ -505,21 +669,35 @@ const LihatWO = () => {
         <table className="wo-table">
           <thead>
             <tr>
-              <th><input type="checkbox" checked={isAllOnPageSelected} onChange={handleSelectAll} /></th>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={isAllOnPageSelected}
+                  onChange={handleSelectAll}
+                />
+              </th>
               <th>AKSI</th>
               {allKeys
                 .filter((key) => visibleKeys.has(key))
                 .map((key) => (
                   <th key={key} onClick={() => requestSort(key)}>
                     {key.replace(/_/g, " ").toUpperCase()}
-                    <SortIcon direction={sortConfig.key === key ? sortConfig.direction : null} />
+                    <SortIcon
+                      direction={
+                        sortConfig.key === key ? sortConfig.direction : null
+                      }
+                    />
                   </th>
                 ))}
             </tr>
           </thead>
           <tbody>
             {dataToShow.length === 0 ? (
-              <tr><td colSpan={visibleKeys.size + 2} className="no-data">Tidak ada data yang cocok.</td></tr>
+              <tr>
+                <td colSpan={visibleKeys.size + 2} className="no-data">
+                  Tidak ada data yang cocok.
+                </td>
+              </tr>
             ) : (
               dataToShow.map((item) => (
                 <WorkOrderRow
@@ -550,21 +728,44 @@ const LihatWO = () => {
 
       <div className="pagination">
         <span className="page-info">
-          Menampilkan {dataToShow.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(sortedData.length, currentPage * itemsPerPage)} dari {sortedData.length} data
+          Menampilkan{" "}
+          {dataToShow.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} -{" "}
+          {Math.min(sortedData.length, currentPage * itemsPerPage)} dari{" "}
+          {sortedData.length} data
         </span>
         <div>
-          <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>&laquo; Sebelumnya</button>
-          <span className="page-number">Halaman {currentPage} dari {totalPages}</span>
-          <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Berikutnya &raquo;</button>
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+          >
+            &laquo; Sebelumnya
+          </button>
+          <span className="page-number">
+            Halaman {currentPage} dari {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Berikutnya &raquo;
+          </button>
         </div>
       </div>
 
       {formatIncident && (
         <div className="format-modal" onClick={() => setFormatIncident(null)}>
-          <div className="format-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="format-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2>Format Incident</h2>
             <pre className="format-pre">{getFormatText(formatIncident)}</pre>
-            <button className="btn btn-primary" onClick={() => setFormatIncident(null)}>Tutup</button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setFormatIncident(null)}
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}

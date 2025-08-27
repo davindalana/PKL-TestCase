@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable"; // <-- PERUBAHAN 1: Cara import diubah
 import "./Report.css";
 
 import { Bar } from "react-chartjs-2";
@@ -103,7 +103,6 @@ const Report = () => {
   const chartData = useMemo(() => {
     const monthlyCounts = {};
 
-    // Gunakan 'filteredReports' sebagai sumber data
     filteredReports.forEach((report) => {
       const date = new Date(report.reported_date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
@@ -139,7 +138,7 @@ const Report = () => {
         },
       ],
     };
-  }, [filteredReports]); // Ubah dependensi ke 'filteredReports'
+  }, [filteredReports]);
 
   const chartOptions = {
     responsive: true,
@@ -225,6 +224,7 @@ const Report = () => {
     const filename = `laporan_tiket_selesai_${new Date()
       .toISOString()
       .slice(0, 10)}`;
+
     if (format === "excel") {
       const worksheet = XLSX.utils.json_to_sheet(dataToExport);
       const workbook = XLSX.utils.book_new();
@@ -241,19 +241,49 @@ const Report = () => {
       link.click();
       document.body.removeChild(link);
     } else if (format === "pdf") {
-      const doc = new jsPDF({ orientation: "landscape" });
-      const headers = getTableHeaders();
-      const body = dataToExport.map((row) =>
-        headers.map((header) => row[header] ?? "")
-      );
-      doc.autoTable({
-        head: [headers.map((h) => h.replace(/_/g, " ").toUpperCase())],
-        body: body,
-        styles: { fontSize: 7 },
-        headStyles: { fillColor: [102, 126, 234] },
-        margin: { top: 10 },
-      });
-      doc.save(`${filename}.pdf`);
+      try {
+        const doc = new jsPDF({ orientation: "landscape" });
+
+        doc.setFontSize(18);
+        doc.text("Laporan Tiket Selesai", 14, 22);
+
+        const pdfHeaders = [
+          "incident",
+          "summary",
+          "reported_date",
+          "owner_group",
+          "witel",
+          "status",
+          "sektor",
+          "workzone",
+        ];
+
+        const displayHeaders = pdfHeaders.map((h) =>
+          h.replace(/_/g, " ").toUpperCase()
+        );
+
+        const body = dataToExport.map((row) =>
+          pdfHeaders.map((header) => String(row[header] ?? ""))
+        );
+
+        // <-- PERUBAHAN 2: Cara memanggil diubah
+        autoTable(doc, {
+          head: [displayHeaders],
+          body: body,
+          startY: 30,
+          theme: "grid",
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          styles: { fontSize: 8 },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+        });
+
+        doc.save(`${filename}.pdf`);
+      } catch (err) {
+        console.error("Gagal membuat PDF:", err);
+        alert(
+          "Terjadi kesalahan saat membuat file PDF. Silakan cek console (F12) untuk detailnya."
+        );
+      }
     }
   };
 
@@ -409,7 +439,7 @@ const Report = () => {
       )}
 
       <div className="chart-container">
-        {filteredReports.length > 0 ? ( // Diubah agar menampilkan pesan jika hasil filter kosong
+        {filteredReports.length > 0 ? (
           <Bar options={chartOptions} data={chartData} />
         ) : (
           !isLoading && (
