@@ -16,3 +16,25 @@
   /* KUNCI #3: Beri jarak aman di sekeliling konten halaman */
   padding: 2rem;
 }
+
+/* ========================================= */
+/* ===== ATURAN RESPONSIVE UNTUK MOBILE ===== */
+/* ========================================= */
+
+/* Aturan CSS di dalam blok ini hanya akan aktif jika
+   lebar layar browser adalah 768px atau kurang. */
+@media (max-width: 768px) {
+  .main-content {
+    /* KUNCI #4: Di layar kecil, kita kurangi padding
+       agar area konten menjadi lebih luas dan tidak sempit. */
+    padding: 1rem;
+  }
+
+  /* Anda bisa menambahkan aturan lain di sini.
+     Misalnya, jika Anda punya sidebar, Anda bisa menyembunyikannya
+     di perangkat mobile. Contoh:
+     .sidebar {
+       display: none;
+     }
+  */
+}
