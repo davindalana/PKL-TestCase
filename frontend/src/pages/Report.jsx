@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // <-- PERUBAHAN 1: Cara import diubah
+import autoTable from "jspdf-autotable";
 import "./Report.css";
 
 import { Bar } from "react-chartjs-2";
@@ -100,37 +100,68 @@ const Report = () => {
     return processedData;
   }, [allReports, searchTerm, dateFilter, sortConfig]);
 
+  // ## PERUBAHAN UTAMA: Logika Chart Dinamis ##
   const chartData = useMemo(() => {
-    const monthlyCounts = {};
+    if (filteredReports.length === 0) {
+      return { labels: [], datasets: [] };
+    }
 
-    filteredReports.forEach((report) => {
-      const date = new Date(report.reported_date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
+    const dates = filteredReports.map((r) => new Date(r.reported_date));
+    const minDate = new Date(Math.min.apply(null, dates));
+    const maxDate = new Date(Math.max.apply(null, dates));
 
-      if (!monthlyCounts[key]) {
-        monthlyCounts[key] = 0;
-      }
-      monthlyCounts[key]++;
-    });
+    const monthDifference =
+      (maxDate.getFullYear() - minDate.getFullYear()) * 12 +
+      (maxDate.getMonth() - minDate.getMonth());
 
-    const sortedKeys = Object.keys(monthlyCounts).sort();
+    let labels = [];
+    let dataValues = [];
+    let aggregationLevel = "monthly";
 
-    const sortedLabels = sortedKeys.map((key) => {
-      const [year, month] = key.split("-");
-      const date = new Date(year, month - 1);
-      return date.toLocaleString("id-ID", { month: "long", year: "numeric" });
-    });
+    if (monthDifference > 24) {
+      aggregationLevel = "yearly";
+      const yearlyCounts = {};
 
-    const dataValues = sortedKeys.map((key) => monthlyCounts[key]);
+      filteredReports.forEach((report) => {
+        const year = new Date(report.reported_date).getFullYear();
+        if (!yearlyCounts[year]) {
+          yearlyCounts[year] = 0;
+        }
+        yearlyCounts[year]++;
+      });
+
+      const sortedYears = Object.keys(yearlyCounts).sort();
+      labels = sortedYears;
+      dataValues = sortedYears.map((year) => yearlyCounts[year]);
+    } else {
+      const monthlyCounts = {};
+      filteredReports.forEach((report) => {
+        const date = new Date(report.reported_date);
+        const key = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, "0")}`;
+        if (!monthlyCounts[key]) {
+          monthlyCounts[key] = 0;
+        }
+        monthlyCounts[key]++;
+      });
+
+      const sortedKeys = Object.keys(monthlyCounts).sort();
+      labels = sortedKeys.map((key) => {
+        const [year, month] = key.split("-");
+        const date = new Date(year, month - 1);
+        return date.toLocaleString("id-ID", { month: "long", year: "numeric" });
+      });
+      dataValues = sortedKeys.map((key) => monthlyCounts[key]);
+    }
 
     return {
-      labels: sortedLabels,
+      labels: labels,
       datasets: [
         {
-          label: "Tiket Selesai per Bulan",
+          label: `Tiket Selesai per ${
+            aggregationLevel === "monthly" ? "Bulan" : "Tahun"
+          }`,
           data: dataValues,
           backgroundColor: "rgba(102, 126, 234, 0.6)",
           borderColor: "rgba(102, 126, 234, 1)",
@@ -148,7 +179,7 @@ const Report = () => {
       },
       title: {
         display: true,
-        text: "Tren Tiket Selesai Bulanan",
+        text: "Tren Tiket Selesai",
         font: {
           size: 18,
         },
@@ -204,7 +235,19 @@ const Report = () => {
 
   const getTableHeaders = () => {
     if (allReports.length === 0) return [];
-    return Object.keys(allReports[0]).sort();
+    // Mengurutkan header secara manual untuk urutan yang lebih baik
+    const preferredOrder = [
+      "incident",
+      "summary",
+      "reported_date",
+      "owner_group",
+      "witel",
+      "sektor",
+      "workzone",
+      "status",
+    ];
+    const headers = Object.keys(allReports[0]);
+    return preferredOrder.filter((h) => headers.includes(h));
   };
 
   const requestSort = (key) => {
@@ -247,17 +290,7 @@ const Report = () => {
         doc.setFontSize(18);
         doc.text("Laporan Tiket Selesai", 14, 22);
 
-        const pdfHeaders = [
-          "incident",
-          "summary",
-          "reported_date",
-          "owner_group",
-          "witel",
-          "status",
-          "sektor",
-          "workzone",
-        ];
-
+        const pdfHeaders = getTableHeaders();
         const displayHeaders = pdfHeaders.map((h) =>
           h.replace(/_/g, " ").toUpperCase()
         );
@@ -266,7 +299,6 @@ const Report = () => {
           pdfHeaders.map((header) => String(row[header] ?? ""))
         );
 
-        // <-- PERUBAHAN 2: Cara memanggil diubah
         autoTable(doc, {
           head: [displayHeaders],
           body: body,

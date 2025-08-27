@@ -41,10 +41,13 @@
 /* ============================================= */
 .report-container {
   width: 100%;
-  height: 100%;
+  /* ## PERBAIKAN UTAMA: Mengganti height dengan min-height ## */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-main);
+  padding: var(--spacing-lg);
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -145,7 +148,6 @@
 .report-table th {
   background: var(--primary-color);
   color: white;
-  /* ## PERUBAHAN: Padding diperbesar agar header lebih lega ## */
   padding: 1rem 1.25rem;
   text-align: left;
   font-weight: 600;
@@ -156,9 +158,8 @@
 }
 
 .report-table td {
-  /* ## PERUBAHAN: Padding diperbesar dan font size disesuaikan ## */
   padding: 0.9rem 1.25rem;
-  font-size: 0.95rem; /* Sedikit diperbesar dari sebelumnya */
+  font-size: 0.95rem;
   border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
   transition: background-color 0.2s ease;
@@ -187,7 +188,6 @@
   width: 15px;
 }
 
-/* Kolom Sticky (Aksi) */
 .sticky-col {
   position: sticky;
   left: 0;
@@ -362,4 +362,40 @@ tr:hover td.sticky-col {
   padding: 3rem;
   color: var(--text-muted);
   font-size: 1.1rem;
+}
+
+/* ============================================= */
+/* ==  8. PENYEMPURNAAN (MEDIA QUERIES)       == */
+/* ============================================= */
+@media (max-width: 768px) {
+  .report-container {
+    padding: var(--spacing-md);
+  }
+
+  .controls-panel,
+  .filter-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .export-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    width: 100%;
+  }
+
+  .export-controls .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
 }
