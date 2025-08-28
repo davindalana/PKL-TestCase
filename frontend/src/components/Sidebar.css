@@ -1,11 +1,64 @@
+/* src/styles/Sidebar.css */
+
 .sidebar {
+  /* --- PERUBAHAN UTAMA UNTUK MOBILE --- */
+  position: fixed; /* Di mobile, posisinya fixed agar bisa overlay */
+  top: 0;
+  left: 0;
+  height: 100%;
+  z-index: 1200; /* Di atas overlay dan konten */
+  transform: translateX(-100%); /* Sembunyikan ke kiri di luar layar */
+  transition: transform 0.3s ease-in-out;
+  /* --- --- */
+
+  display: flex; /* Tetap flex untuk layout internal */
   width: 240px;
-  background-color: #ffffff; /* Ubah background menjadi putih */
-  border-right: 1px solid #e2e8f0; /* Tambahkan garis batas halus */
-  display: flex;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width 0.3s ease;
+}
+
+/* BARU: Kelas ini akan ditambahkan via JavaScript untuk memunculkan sidebar */
+.sidebar.show {
+  transform: translateX(0);
+}
+
+/* BARU: Tombol Close di dalam Sidebar */
+.sidebar-close-btn {
+  display: block; /* Tampil di mobile */
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.sidebar-close-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: #9ca3af;
+}
+.sidebar-close-btn:hover svg {
+  stroke: #2d3748;
+}
+
+/* ====================================================== */
+/* ===== ATURAN RESPONSIVE (TABLET & DESKTOP) ===== */
+/* ====================================================== */
+@media (min-width: 768px) {
+  .sidebar {
+    /* Kembalikan ke perilaku semula di desktop */
+    position: static; /* Bukan fixed lagi */
+    height: auto;
+    transform: translateX(0); /* Selalu terlihat */
+    z-index: auto;
+  }
+
+  /* Sembunyikan tombol close di desktop */
+  .sidebar-close-btn {
+    display: none;
+  }
 }
 
 .sidebar-header {
@@ -14,7 +67,7 @@
   border-bottom: 1px solid #e2e8f0;
   font-size: 1.2rem;
   font-weight: 600;
-  color: #2d3748; /* Warna teks lebih gelap */
+  color: #2d3748;
 }
 
 .sidebar-header h2 {
@@ -30,32 +83,29 @@
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.85rem; /* Jarak antara ikon dan teks */
-  color: #4a5568; /* Warna teks link lebih soft */
+  gap: 0.85rem;
+  color: #4a5568;
   text-decoration: none;
   padding: 0.8rem 1.5rem;
-  margin: 0.25rem 1rem; /* Beri margin agar tidak menempel */
-  border-radius: 8px; /* Buat sudut lebih melengkung */
+  margin: 0.25rem 1rem;
+  border-radius: 8px;
   font-weight: 500;
   transition: background-color 0.2s ease, color 0.2s ease;
-  border-left: 4px solid transparent; /* Hilangkan border default */
+  border-left: 4px solid transparent;
 }
 
-/* Efek saat kursor di atas link */
 .nav-link:hover {
-  background-color: #f7fafc; /* Warna hover yang sangat soft */
+  background-color: #f7fafc;
   color: #2d3748;
 }
 
-/* Tampilan link yang sedang aktif */
 .nav-link.active {
-  background-color: #ebf4ff; /* Warna background biru muda */
-  color: #3b82f6; /* Warna teks biru cerah */
+  background-color: #ebf4ff;
+  color: #3b82f6;
   font-weight: 600;
-  border-left: 4px solid #3b82f6; /* Garis biru di kiri sebagai penanda aktif */
+  border-left: 4px solid #3b82f6;
 }
 
 .nav-link span {
-  /* Untuk memastikan teks tidak bergeser */
   flex-grow: 1;
 }

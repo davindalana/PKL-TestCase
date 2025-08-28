@@ -3,14 +3,33 @@
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 
-const Sidebar = () => {
+// DIUBAH: Terima props 'isOpen' dan 'closeSidebar' dari Layout
+const Sidebar = ({ isOpen, closeSidebar }) => {
   return (
-    <aside className="sidebar">
+    // DIUBAH: Tambahkan kelas 'show' secara dinamis berdasarkan prop 'isOpen'
+    <aside className={`sidebar ${isOpen ? "show" : ""}`}>
+      {/* BARU: Tombol untuk menutup sidebar dari dalam (hanya muncul di mobile) */}
+      <button className="sidebar-close-btn" onClick={closeSidebar}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
       <div className="sidebar-header">
         <h2>Dashboard</h2>
       </div>
       <nav className="sidebar-nav">
-        {/* Tambahkan prop 'end' pada NavLink root agar tidak selalu aktif */}
         <NavLink
           to="/"
           end

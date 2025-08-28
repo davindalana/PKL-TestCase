@@ -1,40 +1,78 @@
+/* src/styles/Layout.css */
+
 .layout-container {
   display: flex;
-  /* KUNCI #1: Container utama harus setinggi layar penuh */
   height: 100vh;
   width: 100vw;
   background-color: #f8f9fa;
-  /* Mencegah komponen aneh yang bisa menyebabkan double scrollbar */
   overflow: hidden;
+  /* BARU: Menjaga posisi relatif untuk elemen absolute di dalamnya */
+  position: relative;
 }
 
 .main-content {
   flex-grow: 1;
-  /* KUNCI #2: Konten bisa di-scroll jika lebih panjang dari layar */
   overflow-y: auto;
   height: 100vh;
-  /* KUNCI #3: Beri jarak aman di sekeliling konten halaman */
-  padding: 2rem;
+  transition: padding 0.3s ease;
+  padding: 1rem;
 }
 
 /* ========================================= */
-/* ===== ATURAN RESPONSIVE UNTUK MOBILE ===== */
+/* ===== GAYA BARU UNTUK MOBILE ===== */
 /* ========================================= */
 
-/* Aturan CSS di dalam blok ini hanya akan aktif jika
-   lebar layar browser adalah 768px atau kurang. */
-@media (max-width: 768px) {
+/* BARU: Tombol Hamburger */
+.hamburger-btn {
+  display: block; /* Muncul di mobile */
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1300; /* Harus di atas sidebar */
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.hamburger-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: #4a5568;
+}
+
+/* BARU: Overlay untuk latar belakang */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1100; /* Di bawah sidebar, di atas konten */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ====================================================== */
+/* ===== ATURAN RESPONSIVE (TABLET & DESKTOP) ===== */
+/* ====================================================== */
+@media (min-width: 768px) {
   .main-content {
-    /* KUNCI #4: Di layar kecil, kita kurangi padding
-       agar area konten menjadi lebih luas dan tidak sempit. */
-    padding: 1rem;
+    padding: 2rem;
   }
 
-  /* Anda bisa menambahkan aturan lain di sini.
-     Misalnya, jika Anda punya sidebar, Anda bisa menyembunyikannya
-     di perangkat mobile. Contoh:
-     .sidebar {
-       display: none;
-     }
-  */
+  /* BARU: Sembunyikan tombol hamburger dan overlay di desktop */
+  .hamburger-btn,
+  .sidebar-overlay {
+    display: none;
+  }
 }

@@ -20,7 +20,10 @@
 }
 
 .action-menu-portal {
-  margin-top: 4px; /* Beri sedikit jarak dari tombol */
+  position: absolute; /* Penting untuk positioning */
+  left: 50%; /* Posisikan titik awal di tengah tombol */
+  transform: translateX(-50%); /* Geser ke kiri sejauh setengah lebarnya */
+  margin-top: 4px;
   background-color: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
@@ -30,9 +33,27 @@
   display: flex;
   flex-direction: column;
   z-index: 1200;
-  /* --- PERUBAHAN DI SINI --- */
-  /* Geser menu 50% ke kiri dari lebarnya sendiri untuk membuatnya center */
-  transform: translateX(-50%);
+}
+
+/* --- PENYESUAIAN UNTUK MOBILE --- */
+/* Jika menu terlalu ke kiri atau kanan di layar kecil */
+@media (max-width: 768px) {
+  .action-menu-portal {
+    /* Agar tidak terpotong di tepi layar */
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+
+    /* Fallback jika terlalu ke kanan */
+    max-width: 90vw;
+  }
+
+  /* Jika dropdown berada di dekat tepi kanan layar, gunakan ini */
+  .action-dropdown.align-right .action-menu-portal {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
 }
 
 .action-menu-portal a {
