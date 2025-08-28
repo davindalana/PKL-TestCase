@@ -1,14 +1,10 @@
 // src/components/Sidebar.jsx
-
 import { NavLink } from "react-router-dom";
 import "./Sidebar.css";
 
-// DIUBAH: Terima props 'isOpen' dan 'closeSidebar' dari Layout
 const Sidebar = ({ isOpen, closeSidebar }) => {
   return (
-    // DIUBAH: Tambahkan kelas 'show' secara dinamis berdasarkan prop 'isOpen'
     <aside className={`sidebar ${isOpen ? "show" : ""}`}>
-      {/* BARU: Tombol untuk menutup sidebar dari dalam (hanya muncul di mobile) */}
       <button className="sidebar-close-btn" onClick={closeSidebar}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -37,7 +33,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
             isActive ? "nav-link active" : "nav-link"
           }
         >
-          📝 <span>Input WO</span>
+          <span>Input WO</span>
         </NavLink>
         <NavLink
           to="/lihat-wo"
@@ -45,7 +41,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
             isActive ? "nav-link active" : "nav-link"
           }
         >
-          📋 <span>Lihat WO</span>
+          <span>Lihat WO</span>
         </NavLink>
         <NavLink
           to="/report"
@@ -53,7 +49,7 @@ const Sidebar = ({ isOpen, closeSidebar }) => {
             isActive ? "nav-link active" : "nav-link"
           }
         >
-          📊 <span>Laporan</span>
+          <span>Laporan</span>
         </NavLink>
       </nav>
     </aside>

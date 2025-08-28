@@ -1,12 +1,13 @@
+// src/pages/InputWO.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // <-- TAMBAHKAN INI
+import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import "./InputWO.css";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const InputWO = () => {
-  const navigate = useNavigate(); // <-- TAMBAHKAN INI
+  const navigate = useNavigate();
   const [textData, setTextData] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -104,6 +105,7 @@ const InputWO = () => {
     "last_update_worklog",
     "resolve_date",
   ];
+
   const isValidDate = (val) => {
     if (!val) return false;
     return /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/.test(val.trim());
@@ -128,7 +130,6 @@ const InputWO = () => {
           .toLowerCase()
           .replace(/\s+|\//g, "_")
           .replace(/[^a-z0-9_]/g, "");
-
         if (allowedFields.includes(normalizedKey)) {
           let v = row[key] !== undefined ? String(row[key]) : "";
           if (datetimeFields.includes(normalizedKey)) {
@@ -163,7 +164,7 @@ const InputWO = () => {
 
     setFileName(file.name);
     setIsLoading(true);
-    setMessage("⏳ Membaca file...");
+    setMessage("Membaca file...");
     const fileExtension = file.name.split(".").pop().toLowerCase();
 
     if (["xlsx", "xls", "csv"].includes(fileExtension)) {
@@ -181,10 +182,10 @@ const InputWO = () => {
             throw new Error("File tidak mengandung data.");
           setJsonPreview(processed);
           setMessage(
-            `✅ Berhasil memuat ${processed.length} baris dari file ${file.name}`
+            `Berhasil memuat ${processed.length} baris dari file ${file.name}`
           );
         } catch (error) {
-          setMessage(`❌ Error saat membaca file: ${error.message}`);
+          setMessage(`Error saat membaca file: ${error.message}`);
           setJsonPreview([]);
           setFileName("");
         } finally {
@@ -204,10 +205,10 @@ const InputWO = () => {
           const processed = processData(jsonData);
           setJsonPreview(processed);
           setMessage(
-            `✅ Berhasil memuat ${processed.length} baris dari file ${file.name}`
+            `Berhasil memuat ${processed.length} baris dari file ${file.name}`
           );
         } catch (error) {
-          setMessage(`❌ Error saat membaca file JSON: ${error.message}`);
+          setMessage(`Error saat membaca file JSON: ${error.message}`);
           setJsonPreview([]);
           setFileName("");
         } finally {
@@ -216,7 +217,7 @@ const InputWO = () => {
       };
       reader.readAsText(file);
     } else {
-      setMessage(`❌ Tipe file .${fileExtension} tidak didukung.`);
+      setMessage(`Tipe file .${fileExtension} tidak didukung.`);
       setFileName("");
       setIsLoading(false);
     }
@@ -250,17 +251,17 @@ const InputWO = () => {
         dataToSubmit = processed;
       }
     } catch (error) {
-      setMessage("❌ Error: " + error.message);
+      setMessage("Error: " + error.message);
       return;
     }
 
     if (dataToSubmit.length === 0) {
-      setMessage("⚠️ Tidak ada data untuk disimpan!");
+      setMessage("Tidak ada data untuk disimpan!");
       return;
     }
 
     setIsLoading(true);
-    setMessage("⏳ Mengirim data ke server...");
+    setMessage("Mengirim data ke server...");
 
     try {
       const response = await fetch(`${API_BASE_URL}/mypost`, {
@@ -270,14 +271,10 @@ const InputWO = () => {
       });
 
       if (response.ok) {
-        // <-- BAGIAN YANG DIUBAH DIMULAI DI SINI
-        setMessage(
-          "✅ Data berhasil disimpan! Mengarahkan ke halaman utama..."
-        );
+        setMessage("Data berhasil disimpan! Mengarahkan ke halaman utama...");
         setTimeout(() => {
-          navigate("/lihat-wo"); // Ganti path jika perlu
-        }, 1500); // Jeda 1.5 detik agar pesan terbaca
-        // <-- BAGIAN YANG DIUBAH SELESAI
+          navigate("/lihat-wo");
+        }, 1500);
       } else {
         let errMsg = "Gagal menyimpan data";
         try {
@@ -287,10 +284,9 @@ const InputWO = () => {
         throw new Error(errMsg);
       }
     } catch (error) {
-      setMessage("❌ Error: " + error.message);
-      setIsLoading(false); // <-- UBAH INI: Pastikan loading berhenti saat error
+      setMessage("Error: " + error.message);
+      setIsLoading(false);
     }
-    // finally block tidak diperlukan lagi di sini karena setIsLoading sudah dihandle di dalam blok try/catch
   };
 
   const handleClear = () => {
@@ -308,16 +304,15 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
   const handleSampleData = () => {
     setTextData(sampleData);
     setInputType("paste-tsv");
-    setMessage("📋 Sample data telah dimuat ke area paste TSV");
+    setMessage("Sample data telah dimuat ke area paste TSV");
   };
 
   return (
     <div className="input-wo-container">
       <div className="page-header">
-        <h1>📝 Input Incident Data</h1>
+        <h1>Input Incident Data</h1>
         <p>
-          Paste data dari Excel, atau upload file untuk disimpan ke database
-          MySQL
+          Paste data dari Excel, atau upload file untuk disimpan ke database.
         </p>
       </div>
 
@@ -329,21 +324,21 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
               onClick={() => setInputType("paste-tsv")}
               className={inputType === "paste-tsv" ? "active" : ""}
             >
-              📋 Paste TSV
+              Paste TSV
             </button>
             <button
               type="button"
               onClick={() => setInputType("paste-json")}
               className={inputType === "paste-json" ? "active" : ""}
             >
-              {} Paste JSON
+              Paste JSON
             </button>
             <button
               type="button"
               onClick={() => setInputType("upload")}
               className={inputType === "upload" ? "active" : ""}
             >
-              ⬆️ Upload File
+              Upload File
             </button>
           </div>
 
@@ -361,7 +356,7 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
                   onChange={handleFileChange}
                 />
                 <label htmlFor="fileInput" className="file-input-label">
-                  {fileName ? `✔️ ${fileName}` : "Pilih sebuah file..."}
+                  {fileName ? `${fileName}` : "Pilih sebuah file..."}
                 </label>
               </div>
             </div>
@@ -395,7 +390,7 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
               onClick={handleSampleData}
               className="btn btn-secondary"
             >
-              📄 Load Sample
+              Load Sample
             </button>
             <button
               type="button"
@@ -403,7 +398,7 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
               className="btn btn-outline"
               disabled={!textData && !jsonPreview.length}
             >
-              🗑️ Clear
+              Clear
             </button>
             <button
               type="submit"
@@ -412,7 +407,7 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
                 isLoading || (!textData.trim() && jsonPreview.length === 0)
               }
             >
-              {isLoading ? "⏳ Memproses..." : "💾 Simpan ke Database"}
+              {isLoading ? "Memproses..." : "Simpan ke Database"}
             </button>
           </div>
         </form>
@@ -420,9 +415,9 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
         {message && (
           <div
             className={`message ${
-              message.includes("✅")
+              message.includes("berhasil")
                 ? "success"
-                : message.includes("❌")
+                : message.includes("Error")
                 ? "error"
                 : "info"
             }`}
@@ -443,7 +438,7 @@ Format Hapus\tINC38587292\t01:56:01\tWAJIB DIISI MSISDN CONTACT PELANGGAN 085852
       )}
 
       <div className="info-panel">
-        <h3>ℹ️ Informasi</h3>
+        <h3>Informasi</h3>
         <ul>
           <li>
             Data akan disimpan ke database <strong>MySQL</strong>

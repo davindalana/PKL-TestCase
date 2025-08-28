@@ -1,5 +1,4 @@
 // src/components/ActionDropdown.jsx
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import "./ActionDropdown.css";
@@ -51,15 +50,8 @@ const ActionDropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  /**
-   * Fungsi terpusat untuk menangani semua aksi dari menu dropdown.
-   * Menerima fungsi aksi (misalnya onEdit, onDelete) sebagai argumen.
-   */
   const handleAction = (e, action) => {
     e.preventDefault();
-    // Memanggil fungsi aksi dengan 'item' atau 'item.incident' sesuai kebutuhan.
-    // Asumsi: onFormat, onCopy, onEdit butuh seluruh objek 'item'.
-    // Asumsi: onDelete dan onComplete hanya butuh 'item.incident'.
     if (action === onDelete || action === onComplete) {
       action(item.incident);
     } else {
@@ -76,7 +68,7 @@ const ActionDropdown = ({
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        ⚙️
+        Aksi
       </button>
 
       {isOpen &&

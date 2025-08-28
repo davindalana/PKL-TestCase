@@ -100,7 +100,6 @@ const Report = () => {
     return processedData;
   }, [allReports, searchTerm, dateFilter, sortConfig]);
 
-  // ## PERUBAHAN UTAMA: Logika Chart Dinamis ##
   const chartData = useMemo(() => {
     if (filteredReports.length === 0) {
       return { labels: [], datasets: [] };
@@ -163,8 +162,8 @@ const Report = () => {
             aggregationLevel === "monthly" ? "Bulan" : "Tahun"
           }`,
           data: dataValues,
-          backgroundColor: "rgba(102, 126, 234, 0.6)",
-          borderColor: "rgba(102, 126, 234, 1)",
+          backgroundColor: "rgba(229, 30, 37, 0.6)",
+          borderColor: "rgba(229, 30, 37, 1)",
           borderWidth: 1,
         },
       ],
@@ -235,7 +234,6 @@ const Report = () => {
 
   const getTableHeaders = () => {
     if (allReports.length === 0) return [];
-    // Mengurutkan header secara manual untuk urutan yang lebih baik
     const preferredOrder = [
       "incident",
       "summary",
@@ -286,7 +284,6 @@ const Report = () => {
     } else if (format === "pdf") {
       try {
         const doc = new jsPDF({ orientation: "landscape" });
-
         doc.setFontSize(18);
         doc.text("Laporan Tiket Selesai", 14, 22);
 
@@ -304,7 +301,7 @@ const Report = () => {
           body: body,
           startY: 30,
           theme: "grid",
-          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          headStyles: { fillColor: [229, 30, 37], textColor: 255 },
           styles: { fontSize: 8 },
           alternateRowStyles: { fillColor: [245, 245, 245] },
         });
@@ -313,7 +310,7 @@ const Report = () => {
       } catch (err) {
         console.error("Gagal membuat PDF:", err);
         alert(
-          "Terjadi kesalahan saat membuat file PDF. Silakan cek console (F12) untuk detailnya."
+          "Terjadi kesalahan saat membuat file PDF. Silakan cek console untuk detailnya."
         );
       }
     }
@@ -323,7 +320,7 @@ const Report = () => {
     return (
       <div className="report-container">
         <div className="loading-container">
-          <div className="loading-spinner">⏳</div>{" "}
+          <div className="loading-spinner"></div>
           <p>Memuat data laporan...</p>
         </div>
       </div>
@@ -334,7 +331,7 @@ const Report = () => {
     return (
       <div className="report-container">
         <div className="error-container">
-          <h2>Gagal Memuat Laporan 🔌</h2> <p>{error}</p>
+          <h2>Gagal Memuat Laporan</h2> <p>{error}</p>
         </div>
       </div>
     );
@@ -343,7 +340,7 @@ const Report = () => {
   return (
     <div className="report-container">
       <div className="page-header">
-        <h1>📊 Laporan Tiket Selesai</h1>
+        <h1>Laporan Tiket Selesai</h1>
       </div>
 
       <div className="controls-panel">
@@ -373,7 +370,7 @@ const Report = () => {
       <div className="filter-container">
         <input
           type="text"
-          placeholder="🔍 Cari di semua kolom..."
+          placeholder="Cari di semua kolom..."
           className="search-input"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

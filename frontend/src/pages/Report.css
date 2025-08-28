@@ -1,59 +1,18 @@
-/* ============================================= */
-/* ==         1. DEFINISI VARIABEL CSS        == */
-/* ============================================= */
-:root {
-  /* Warna Utama */
-  --primary-color: #667eea;
-  --primary-color-dark: #5a67d8;
-  --secondary-color: #a0aec0;
-  --secondary-color-dark: #718096;
-  --info-color: #4299e1;
-  --info-color-dark: #3182ce;
-  --warning-color: #f6ad55;
-  --warning-color-dark: #ed8936;
-  --danger-color: #fc8181;
-  --danger-bg-color: #fff5f5;
-
-  /* Warna Teks & Latar Belakang */
-  --text-primary: #3b3663;
-  --text-secondary: #4a5568;
-  --text-muted: #718096;
-  --bg-main: #f7fafc; /* Latar belakang utama halaman */
-  --bg-card: #ffffff;
-  --bg-hover: #e9f0fb;
-  --bg-even-row: #f8fafc;
-
-  /* Border & Bayangan */
-  --border-color: #e2e8f0;
-  --border-radius-md: 8px;
-  --border-radius-lg: 14px;
-  --shadow-sm: 0 1px 2px rgba(44, 62, 80, 0.04);
-  --shadow-md: 0 4px 12px rgba(44, 62, 80, 0.07);
-  --focus-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
-
-  /* Spasi & Ukuran */
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-}
-
-/* ============================================= */
-/* ==           2. GAYA DASAR & UTAMA         == */
-/* ============================================= */
+/* frontend/src/pages/Report.css */
 .report-container {
   width: 100%;
-  /* ## PERBAIKAN UTAMA: Mengganti height dengan min-height ## */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-main);
-  padding: var(--spacing-lg);
+  background-color: var(--background-main);
+  padding: 1.5rem;
   box-sizing: border-box;
 }
 
 .page-header {
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .page-header h1 {
@@ -63,39 +22,36 @@
   letter-spacing: 1px;
 }
 
-/* ============================================= */
-/* ==       3. PANEL KONTROL & FILTER         == */
-/* ============================================= */
 .controls-panel,
 .pagination-controls {
-  background: var(--bg-card);
-  border-radius: var(--border-radius-lg);
-  padding: 1.2rem var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-  box-shadow: var(--shadow-md);
+  background: var(--background-card);
+  border-radius: 14px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: 1rem;
 }
 
 .filter-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
 .search-input,
 .date-filter-dropdown {
-  padding: 0.7rem var(--spacing-md);
+  padding: 0.7rem 1rem;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
+  border-radius: 8px;
   font-size: 1rem;
-  background-color: var(--bg-card);
+  background-color: var(--background-card);
 }
 
 .search-input {
@@ -114,28 +70,25 @@
 .date-filter-dropdown:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: var(--focus-shadow);
+  box-shadow: 0 0 0 2px rgba(229, 30, 37, 0.2);
 }
 
 .report-summary {
   font-size: 1rem;
   font-weight: 500;
   color: var(--text-secondary);
-  background-color: var(--bg-main);
-  padding: 0.5rem var(--spacing-md);
-  border-radius: var(--border-radius-md);
+  background-color: var(--background-main);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   border: 1px solid var(--border-color);
 }
 
-/* ============================================= */
-/* ==           4. TABEL LAPORAN              == */
-/* ============================================= */
 .table-container {
   overflow-x: auto;
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  background: var(--bg-card);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  background: var(--background-card);
   flex-grow: 1;
   min-height: 0;
 }
@@ -146,8 +99,8 @@
 }
 
 .report-table th {
-  background: var(--primary-color);
-  color: white;
+  background: var(--telkom-black);
+  color: var(--telkom-white);
   padding: 1rem 1.25rem;
   text-align: left;
   font-weight: 600;
@@ -166,11 +119,11 @@
 }
 
 .report-table tbody tr:nth-child(even) {
-  background-color: var(--bg-even-row);
+  background-color: #f8fafc;
 }
 
 .report-table tbody tr:hover {
-  background-color: var(--bg-hover);
+  background-color: #e9f0fb;
 }
 
 .sortable-header {
@@ -179,7 +132,7 @@
 }
 
 .sortable-header:hover {
-  background-color: var(--primary-color-dark);
+  background-color: var(--telkom-grey-dark);
 }
 
 .sort-indicator {
@@ -195,21 +148,21 @@
 
 th.sticky-col {
   z-index: 15;
-  background-color: var(--primary-color);
+  background-color: var(--telkom-black);
 }
 
 td.sticky-col {
-  background-color: var(--bg-card);
+  background-color: var(--background-card);
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
   z-index: 5;
 }
 
 tr:nth-child(even) td.sticky-col {
-  background-color: var(--bg-even-row);
+  background-color: #f8fafc;
 }
 
 tr:hover td.sticky-col {
-  background-color: var(--bg-hover);
+  background-color: #e9f0fb;
 }
 
 .action-header {
@@ -228,53 +181,50 @@ tr:hover td.sticky-col {
   text-overflow: ellipsis;
 }
 
-/* ============================================= */
-/* ==           5. TOMBOL (BUTTONS)           == */
-/* ============================================= */
 .btn {
   padding: 0.6rem 1.2rem;
-  border-radius: var(--border-radius-md);
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   border: none;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--telkom-red);
+  color: var(--button-primary-text);
 }
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-color-dark);
+  background-color: #c41a20;
 }
 
 .btn-secondary {
-  background-color: var(--secondary-color);
-  color: white;
+  background-color: var(--telkom-grey-dark);
+  color: var(--button-primary-text);
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--secondary-color-dark);
+  background-color: var(--telkom-black);
 }
 
 .btn-info {
-  background-color: var(--info-color);
+  background-color: #007bff; /* Blue for info */
   color: white;
 }
 .btn-info:hover:not(:disabled) {
-  background-color: var(--info-color-dark);
+  background-color: #0056b3;
 }
 
 .btn-reopen {
-  background-color: var(--warning-color);
+  background-color: #ed8936;
   color: white;
   padding: 0.4rem 0.8rem;
   font-size: 0.85rem;
@@ -282,7 +232,7 @@ tr:hover td.sticky-col {
 }
 
 .btn-reopen:hover:not(:disabled) {
-  background-color: var(--warning-color-dark);
+  background-color: #dd6b20;
 }
 
 .btn-reopen:disabled,
@@ -292,58 +242,55 @@ tr:hover td.sticky-col {
 }
 
 .pagination-controls button {
-  padding: 0.5rem var(--spacing-md);
+  padding: 0.5rem 1rem;
   border: 1px solid var(--border-color);
-  background-color: var(--bg-card);
+  background-color: var(--background-card);
   font-weight: 500;
 }
 
 .pagination-controls button:hover:not(:disabled) {
-  background-color: var(--bg-main);
-  border-color: var(--secondary-color);
+  background-color: var(--background-main);
+  border-color: var(--telkom-grey-medium);
 }
 
-/* ============================================= */
-/* ==     6. GRAFIK & KONTROL PAGINASI        == */
-/* ============================================= */
 .chart-container {
-  background-color: var(--bg-card);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-md);
-  margin-top: var(--spacing-lg);
+  background-color: var(--background-card);
+  padding: 1.5rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+  margin-top: 1.5rem;
   max-height: 450px;
 }
 
 .pagination-controls {
-  margin-top: var(--spacing-lg);
+  margin-top: 1.5rem;
   margin-bottom: 0;
   color: var(--text-secondary);
 }
 
-/* ============================================= */
-/* ==      7. STATUS (LOADING, ERROR, DLL)    == */
-/* ============================================= */
 .loading-container {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 400px;
-  color: var(--text-muted);
+  color: var(--telkom-grey-medium);
   font-size: 1.2rem;
 }
 
 .loading-spinner {
-  font-size: 3rem;
-  margin-right: var(--spacing-md);
-  animation: spin 2s linear infinite;
+  border: 4px solid var(--telkom-grey-light);
+  border-top: 4px solid var(--telkom-red);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from {
+  0% {
     transform: rotate(0deg);
   }
-  to {
+  100% {
     transform: rotate(360deg);
   }
 }
@@ -351,25 +298,22 @@ tr:hover td.sticky-col {
 .error-container {
   padding: 2rem;
   text-align: center;
-  background-color: var(--danger-bg-color);
-  border: 1px solid var(--danger-color);
-  border-radius: var(--border-radius-lg);
+  background-color: #fff5f5;
+  border: 1px solid #fc8181;
+  border-radius: 12px;
   margin: 2rem 0;
 }
 
 .no-data {
   text-align: center;
   padding: 3rem;
-  color: var(--text-muted);
+  color: var(--telkom-grey-medium);
   font-size: 1.1rem;
 }
 
-/* ============================================= */
-/* ==  8. PENYEMPURNAAN (MEDIA QUERIES)       == */
-/* ============================================= */
 @media (max-width: 768px) {
   .report-container {
-    padding: var(--spacing-md);
+    padding: 1rem;
   }
 
   .controls-panel,

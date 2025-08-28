@@ -1,5 +1,4 @@
 // src/pages/LihatWO/index.jsx
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import "./LihatWO.css";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -10,8 +9,6 @@ import SortIcon from "../../components/SortIcon";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Daftar lengkap semua kolom yang mungkin ada, berdasarkan gambar Anda.
-// Urutan item di sini menentukan urutan default kolom di tabel.
 const ALL_POSSIBLE_KEYS = [
   "incident",
   "ticket_id_gamas",
@@ -97,7 +94,6 @@ const ALL_POSSIBLE_KEYS = [
   "sektor",
 ];
 
-// Daftar statis untuk filter status
 const ALL_STATUS_OPTIONS = [
   "IN PROGRESS",
   "PENDING",
@@ -372,7 +368,7 @@ const LihatWO = () => {
 
       if (!ticketToComplete || !ticketToComplete.sektor) {
         alert(
-          "⚠️ Gagal! Pastikan Sektor sudah dipilih sebelum menyelesaikan tiket."
+          "Gagal! Pastikan Sektor sudah dipilih sebelum menyelesaikan tiket."
         );
         return;
       }
@@ -493,7 +489,7 @@ const LihatWO = () => {
   if (isLoading)
     return (
       <div className="loading-container">
-        <div className="loading-spinner">⏳</div> <p>Memuat data...</p>
+        <div className="loading-spinner"></div> <p>Memuat data...</p>
       </div>
     );
 
@@ -501,8 +497,8 @@ const LihatWO = () => {
     return (
       <div className="lihat-wo-container">
         <div className="error-container">
-          <h2> Gagal Memuat Data 🔌</h2>
-          <p>Terjadi kesalahan saat mengambil data dari server. </p>
+          <h2>Gagal Memuat Data</h2>
+          <p>Terjadi kesalahan saat mengambil data dari server.</p>
           <pre className="error-message">{error}</pre>
           <p>
             <strong>Pastikan server backend Anda berjalan</strong> dan alamat
@@ -515,14 +511,14 @@ const LihatWO = () => {
   return (
     <div className="lihat-wo-container">
       <div className="page-header">
-        <h1>📋 Lihat Incident Management</h1>
+        <h1>Incident Management</h1>
       </div>
 
       <div className="table-controls">
         <div className="search-and-filters">
           <input
             type="text"
-            placeholder="🔍 Cari di kolom yang tampil..."
+            placeholder="Cari di kolom yang tampil..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -614,14 +610,14 @@ const LihatWO = () => {
             }}
             className="btn btn-outline"
           >
-            ⚙️ Atur Kolom
+            Atur Kolom
           </button>
           <button
             onClick={handleBulkDelete}
             className="btn btn-danger"
             disabled={selectedItems.length === 0}
           >
-            🗑️ Hapus ({selectedItems.length})
+            Hapus ({selectedItems.length})
           </button>
         </div>
       </div>
