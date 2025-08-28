@@ -8,7 +8,7 @@ import { WorkOrderRow } from "./WorkOrderRow";
 import { EditModal } from "./EditModal";
 import SortIcon from "../../components/SortIcon";
 
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Daftar lengkap semua kolom yang mungkin ada, berdasarkan gambar Anda.
 // Urutan item di sini menentukan urutan default kolom di tabel.

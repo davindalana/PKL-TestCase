@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom"; // <-- TAMBAHKAN INI
 import * as XLSX from "xlsx";
 import "./InputWO.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const InputWO = () => {
   const navigate = useNavigate(); // <-- TAMBAHKAN INI
   const [textData, setTextData] = useState("");
@@ -261,7 +263,7 @@ const InputWO = () => {
     setMessage("⏳ Mengirim data ke server...");
 
     try {
-      const response = await fetch("http://localhost:3000/api/mypost", {
+      const response = await fetch(`${API_BASE_URL}/mypost`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSubmit),
