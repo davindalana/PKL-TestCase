@@ -1,0 +1,8 @@
+{
+  "name": "pkl-backend",
+  "main": "src/index.js",
+  "compatibility_date": "2023-11-21",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
