@@ -1,15 +1,12 @@
 {
 	"name": "pkl-backend",
-	"main": "dist/index.js",
-	"compatibility_date": "2023-11-21",
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
+	"main": "src/index.js",
+	"compatibility_date": "2025-08-15",
 	"d1_databases": [ // <-- TAMBAHKAN BAGIAN INI
-    {
-      "binding": "DB", // Ini nama variabel untuk database di dalam kode
-      "database_name": "pkl-database",
-      "database_id": "8bff74e9-ccab-4b7f-8d69-2a9a8339c4f7" // ID ini bisa Anda dapatkan dari dasbor D1
-    }
-  ]
+		{
+			"binding": "DB", // Ini nama variabel untuk database di dalam kode
+			"database_name": "pkl-database",
+			"database_id": "8bff74e9-ccab-4b7f-8d69-2a9a8339c4f7" // ID ini bisa Anda dapatkan dari dasbor D1
+		}
+	]
 }
