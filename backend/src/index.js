@@ -16,11 +16,98 @@ router.get("/", () => {
 });
 
 /**
+ * ENDPOINT: Menerima data alamat dan menyimpan ke tabel 'data_layanan' di D1.
+ * Metode: POST
+ * URL: /addresses
+ */
+router.post("/save-addresses", async (request, env) => {
+  if (!env.DB) {
+    return json({ error: "Database not configured" }, { status: 500 });
+  }
+
+  try {
+    const data = await request.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." }, { status: 400 });
+    }
+
+    // Menggunakan 'REPLACE INTO' sebagai pengganti 'ON DUPLICATE KEY UPDATE' di D1
+    // Pastikan 'service_no' adalah PRIMARY KEY di tabel 'data_layanan'
+    const query = "REPLACE INTO data_layanan (service_no, alamat) VALUES (?, ?);";
+    
+    // Siapkan batch statements untuk efisiensi
+    const stmts = data
+      .filter(row => row.service_no) // Hanya proses baris yang memiliki service_no
+      .map(row => env.DB.prepare(query).bind(row.service_no, row.alamat || null));
+
+    if (stmts.length === 0) {
+        return json({ success: true, message: "Tidak ada data valid untuk diproses." });
+    }
+
+    await env.DB.batch(stmts);
+
+    return json({
+      success: true,
+      message: `${stmts.length} baris data alamat berhasil disimpan.`,
+    }, { status: 201 });
+
+  } catch (err) {
+    console.error("Gagal menyimpan ke data_layanan D1:", err);
+    return json({ success: false, error: err.message }, { status: 500 });
+  }
+});
+
+
+/**
+ * ENDPOINT: Menyinkronkan semua alamat dari 'data_layanan' ke 'work_orders' di D1
+ * Metode: POST
+ * URL: /sync-all-addresses
+ */
+router.post("/sync-all", async (request, env) => {
+  if (!env.DB) {
+    return json({ error: "Database not configured" }, { status: 500 });
+  }
+
+  try {
+    // LANGKAH 1: Ambil semua data alamat yang relevan dari 'data_layanan'
+    const { results: addressesToSync } = await env.DB.prepare(
+      "SELECT service_no, alamat FROM data_layanan WHERE service_no IS NOT NULL AND alamat IS NOT NULL"
+    ).all();
+
+    if (!addressesToSync || addressesToSync.length === 0) {
+      return json({ success: true, message: "Tidak ada alamat baru untuk disinkronkan." });
+    }
+
+    // LANGKAH 2: Buat batch UPDATE statement untuk 'work_orders'
+    // D1 tidak mendukung 'UPDATE JOIN', jadi kita lakukan secara manual
+    const stmts = addressesToSync.map(addr =>
+      env.DB.prepare("UPDATE work_orders SET alamat = ? WHERE service_no = ?")
+        .bind(addr.alamat, addr.service_no)
+    );
+
+    const batchResult = await env.DB.batch(stmts);
+    
+    // Hitung jumlah update yang berhasil
+    const successfulUpdates = batchResult.filter(r => r.success && r.meta.changes > 0).length;
+
+    return json({
+      success: true,
+      message: `Sinkronisasi selesai. ${successfulUpdates} alamat di work_orders berhasil diperbarui.`,
+    });
+    
+  } catch (err) {
+    console.error("Gagal sinkronisasi alamat di D1:", err);
+    return json({ success: false, error: "Terjadi kesalahan pada server saat sinkronisasi." }, { status: 500 });
+  }
+});
+
+/**
  * ENDPOINT: Melihat semua data Work Order dari database D1.
  * Metode: GET
  * URL: /work-orders
  */
-router.get("/api/view-mysql", async (request, env) => {
+router.get("/view-mysql", async (request, env) => {
   // Pastikan binding database D1 ada
   if (!env.DB) {
     console.error("Database binding 'DB' tidak ditemukan. Pastikan sudah dikonfigurasi di wrangler.toml");
@@ -59,7 +146,7 @@ router.get("/api/view-mysql", async (request, env) => {
  * Metode: POST
  * URL: /work-orders
  */
-router.post("/api/work-orders", async (request, env) => {
+router.post("/work-orders", async (request, env) => {
   if (!env.DB) {
     return json({ success: false, error: "Database connection not configured." }, { status: 500 });
   }
@@ -106,7 +193,7 @@ router.post("/api/work-orders", async (request, env) => {
  * Metode: DELETE
  * URL: /work-orders/:incident
  */
-router.delete("/api/work-orders/:incident", async (request, env) => {
+router.delete("/work-orders/:incident", async (request, env) => {
   if (!env.DB) {
     return json({ success: false, error: "Database connection not configured." }, { status: 500 });
   }
@@ -134,7 +221,7 @@ router.delete("/api/work-orders/:incident", async (request, env) => {
  * Metode: POST
  * URL: /sync-address
  */
-router.post("/api/mypost", async (request, env) => {
+router.post("/mypost", async (request, env) => {
   if (!env.DB) {
     return json({ success: false, error: "Database connection not configured." }, { status: 500 });
   }
@@ -186,7 +273,7 @@ router.post("/api/mypost", async (request, env) => {
  * Metode: GET
  * URL: /workzones
  */
-router.get("/api/workzones", async (request, env) => {
+router.get("/workzones", async (request, env) => {
   if (!env.DB) {
     return json({ error: "Database not configured" }, { status: 500 });
   }
@@ -206,7 +293,7 @@ router.get("/api/workzones", async (request, env) => {
  * Metode: GET
  * URL: /workzone-map
  */
-router.get("/api/workzone-map", async (request, env) => {
+router.get("/workzone-map", async (request, env) => {
   if (!env.DB) {
     return json({ error: "Database not configured" }, { status: 500 });
   }
@@ -237,7 +324,7 @@ router.get("/api/workzone-map", async (request, env) => {
  * Metode: PUT
  * URL: /work-orders/:incident
  */
-router.put("/api/work-orders/:incident", async (request, env) => {
+router.put("/work-orders/:incident", async (request, env) => {
   if (!env.DB) {
     return json({ error: "Database not configured" }, { status: 500 });
   }
@@ -288,7 +375,7 @@ router.put("/api/work-orders/:incident", async (request, env) => {
  * Metode: POST
  * URL: /work-orders/:incident/complete
  */
-router.post("/api/work-orders/:incident/complete", async (request, env) => {
+router.post("/work-orders/:incident/complete", async (request, env) => {
   if (!env.DB) {
     return json({ error: "Database not configured" }, { status: 500 });
   }
@@ -327,7 +414,7 @@ router.post("/api/work-orders/:incident/complete", async (request, env) => {
  * Metode: GET
  * URL: /reports
  */
-router.get("/api/reports", async (request, env) => {
+router.get("/reports", async (request, env) => {
   if (!env.DB) {
     return json({ error: "Database not configured" }, { status: 500 });
   }
@@ -346,7 +433,7 @@ router.get("/api/reports", async (request, env) => {
  * Metode: POST
  * URL: /reports/:incident/reopen
  */
-router.post("/api/reports/:incident/reopen", async (request, env) => {
+router.post("/reports/:incident/reopen", async (request, env) => {
   if (!env.DB) {
     return json({ error: "Database not configured" }, { status: 500 });
   }
