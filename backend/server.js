@@ -1,27 +1,20 @@
-// server.js
-require('dotenv').config();
+require('dotenv').config(); 
 const express = require('express');
+const apiRoutes = require('./routes/apiRoutes');
 const cors = require('cors');
-// Import connectToMongo dari db.js
-const { mysqlPool, connectToMongo } = require('./config/db');
-const woRoutes = require('./routes/wo');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = 3000;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use('/api/wo', woRoutes);
 
-// Cukup jalankan koneksi ke MongoDB, tanpa service sinkronisasi
-connectToMongo().then(() => {
-  app.listen(PORT, async () => {
-    console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
-    try {
-      await mysqlPool.query('SELECT 1');
-      console.log('✅ Berhasil terhubung ke MySQL');
-    } catch (err) {
-      console.error('❌ Gagal terhubung ke MySQL:', err.message);
-    }
-  });
+app.use(express.json({ limit: '50mb' }));
+app.use('/api', apiRoutes);
+
+app.get('/', (req, res) => {
+  res.send('Server sinkronisasi berjalan!');
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server listening at http://localhost:${PORT}`);
 });
