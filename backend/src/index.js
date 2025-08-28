@@ -1,5 +1,4 @@
 import { Router, error, json } from 'itty-router';
-// Sesuaikan path ke file konfigurasi database Anda
 import mysqlPool from './config/dbMysql';
 
 // Membuat instance router dengan base path /api

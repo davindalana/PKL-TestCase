@@ -1,5 +1,5 @@
 // Menggunakan mysql2/promise untuk async/await
-const mysql = require("mysql2/promise");
+import mysql from "mysql2/promise";
 
 // Membuat "pool" koneksi untuk efisiensi
 const pool = mysql.createPool({
