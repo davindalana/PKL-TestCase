@@ -25,6 +25,45 @@ router.get("/", () => {
 });
 
 /**
+ * ENDPOINT: Melihat semua data Work Order dari database D1.
+ * Metode: GET
+ * URL: /work-orders
+ */
+router.get("/view-d1", async (request, env) => {
+  // Pastikan binding database D1 ada
+  if (!env.DB) {
+    console.error("Database binding 'DB' tidak ditemukan. Pastikan sudah dikonfigurasi di wrangler.toml");
+    return json({
+      success: false,
+      error: "Database connection not configured."
+    }, { status: 500 });
+  }
+
+  try {
+    // Siapkan dan eksekusi query untuk mengambil semua data dari tabel 'work_orders'
+    const stmt = env.DB.prepare("SELECT * FROM data_layanan");
+    const { results } = await stmt.all();
+
+    // Kembalikan data yang ditemukan sebagai response JSON
+    return json({
+      success: true,
+      count: results.length,
+      data: results,
+    });
+
+  } catch (err) {
+    // Tangani jika terjadi error saat query ke database
+    console.error("Gagal mengambil data dari D1:", err);
+
+    return json({
+      success: false,
+      error: "Failed to retrieve data from database.",
+      details: err.message
+    }, { status: 500 });
+  }
+});
+
+/**
  * ENDPOINT: Menerima data alamat dan menyimpan ke tabel 'data_layanan' di D1.
  * Metode: POST
  * URL: /addresses
