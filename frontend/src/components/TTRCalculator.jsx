@@ -1,92 +1,61 @@
-// frontend/src/components/TTRCalculator.jsx
+// Lokasi: frontend/src/components/TTRCalculator.jsx
 
 import React, { useState, useEffect } from "react";
 
-// Fungsi untuk memformat durasi menjadi "X Hari Y Jam Z Menit"
-function formatDuration(milliseconds) {
-  if (isNaN(milliseconds) || milliseconds < 0) {
-    return "-";
-  }
+// Fungsi untuk menghitung selisih waktu, mirip dengan fungsi PHP Anda
+const calculateDuration = (start, end) => {
+  // Jika tidak ada tanggal mulai, kembalikan strip
+  if (!start) return "-";
 
-  let totalSeconds = Math.floor(milliseconds / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  totalSeconds %= 86400;
-  const hours = Math.floor(totalSeconds / 3600);
-  totalSeconds %= 3600;
-  const minutes = Math.floor(totalSeconds / 60);
+  const startDate = new Date(start);
+  // Jika tidak ada tanggal selesai (tiket masih open), gunakan waktu saat ini
+  const endDate = end ? new Date(end) : new Date();
+
+  // Jika tanggal mulai tidak valid
+  if (isNaN(startDate.getTime())) return "-";
+
+  let diff = endDate.getTime() - startDate.getTime();
+  if (diff < 0) diff = 0; // Pastikan selisih tidak negatif
+
+  // Konversi selisih milidetik ke hari, jam, dan menit
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  diff -= days * (1000 * 60 * 60 * 24);
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  diff -= hours * (1000 * 60 * 60);
+  const minutes = Math.floor(diff / (1000 * 60));
 
   let result = "";
-  if (days > 0) result += `${days} H `;
-  if (hours > 0) result += `${hours} J `;
-  if (minutes >= 0) result += `${minutes} M`;
+  if (days > 0) result += `${days}H `;
+  if (hours > 0) result += `${hours}J `;
+  // Selalu tampilkan menit, bahkan jika 0
+  if (minutes >= 0) result += `${minutes}M`;
 
-  return result.trim() === "" ? "0 M" : result.trim();
-}
+  // Jika tidak ada hasil (misal, selisih < 1 menit), tampilkan "0M"
+  return result.trim() === "" ? "0M" : result.trim();
+};
 
-const TTRCalculator = ({ reportedDate, resolvedDate, status }) => {
-  const [ttr, setTtr] = useState("Menghitung...");
+const TTRCalculator = ({ reportedDate, resolvedDate }) => {
+  // Hitung durasi awal saat komponen pertama kali render
+  const [duration, setDuration] = useState(
+    calculateDuration(reportedDate, resolvedDate)
+  );
 
   useEffect(() => {
-    if (!reportedDate) {
-      setTtr("-");
-      return;
+    // Jika tiket belum selesai (tidak ada resolvedDate), kita perlu update durasi secara berkala
+    if (reportedDate && !resolvedDate) {
+      // Set interval untuk mengkalkulasi ulang setiap 1 menit (60000 ms)
+      const interval = setInterval(() => {
+        setDuration(calculateDuration(reportedDate, null));
+      }, 60000);
+
+      // Fungsi cleanup: hapus interval saat komponen di-unmount (pindah halaman, etc)
+      return () => clearInterval(interval);
     }
+    // Jika tiket sudah selesai, cukup hitung sekali dan tidak perlu update
+    setDuration(calculateDuration(reportedDate, resolvedDate));
+  }, [reportedDate, resolvedDate]);
 
-    let interval;
-    const upperCaseStatus = status ? status.toUpperCase() : "";
-    const isTicketConsideredClosed =
-      upperCaseStatus === "CLOSED" || upperCaseStatus === "RESOLVED";
-
-    // Jika tiket dianggap selesai (punya resolvedDate atau statusnya CLOSED/RESOLVED)
-    if (resolvedDate || isTicketConsideredClosed) {
-      const start = new Date(reportedDate).getTime();
-      // Gunakan resolvedDate jika ada, jika tidak (misal status CLOSED tapi tanggal null), gunakan waktu sekarang
-      const end = resolvedDate ? new Date(resolvedDate).getTime() : Date.now();
-      const diff = end - start;
-      setTtr(formatDuration(diff));
-    } else {
-      // Jika tiket masih berjalan
-      const updateRunningTTR = () => {
-        const start = new Date(reportedDate).getTime();
-        const now = Date.now();
-        const diff = now - start;
-        setTtr(formatDuration(diff));
-      };
-
-      updateRunningTTR();
-      // Update setiap 60 detik (1 menit) untuk efisiensi
-      interval = setInterval(updateRunningTTR, 60000);
-    }
-
-    // Fungsi cleanup untuk membersihkan interval
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [reportedDate, resolvedDate, status]); // Dependensi effect
-
-  const isClosed =
-    status &&
-    (status.toUpperCase() === "CLOSED" || status.toUpperCase() === "RESOLVED");
-  const badgeColor = isClosed ? "#28a745" : "#ffc107"; // Hijau untuk selesai, Kuning untuk berjalan
-  const textColor = isClosed ? "white" : "black";
-
-  return (
-    <span
-      style={{
-        backgroundColor: badgeColor,
-        color: textColor,
-        padding: "4px 10px",
-        borderRadius: "12px",
-        fontSize: "0.85em",
-        fontWeight: "500",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {ttr}
-    </span>
-  );
+  return <span>{duration}</span>;
 };
 
 export default TTRCalculator;

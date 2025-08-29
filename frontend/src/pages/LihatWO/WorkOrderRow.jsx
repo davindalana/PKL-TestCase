@@ -1,159 +1,173 @@
-// src/pages/LihatWO/WorkOrderRow.jsx
-import React, { memo, useMemo } from 'react';
-import CustomDropdown from '../../components/CustomDropdown';
-import ActionDropdown from '../../components/ActionDropdown';
-import { formatReadableDate } from '../../utils/dateFormatter';
+// Lokasi: frontend/src/pages/LihatWO/WorkOrderRow.jsx
+
+import React, { memo, useMemo } from "react";
+import CustomDropdown from "../../components/CustomDropdown";
+import ActionDropdown from "../../components/ActionDropdown";
+import { formatReadableDate } from "../../utils/dateFormatter";
+import TTRCalculator from "../../components/TTRCalculator"; // <-- PASTIKAN PATH INI BENAR
 
 const dateColumns = new Set([
-  'reported_date',
-  'status_date',
-  'resolve_date',
-  'date_modified',
-  'booking_date',
-  'last_update_worklog'
+  "reported_date",
+  "status_date",
+  "resolve_date",
+  "date_modified",
+  "booking_date",
+  "last_update_worklog",
 ]);
 
-export const WorkOrderRow = memo(({
-  item, allKeys, visibleKeys, isSelected, onSelect, onUpdate,
-  updatingStatus, onEdit, onDelete, onFormat, onCopy, onComplete,
-  allSektorOptions, statusOptions,
-  getWorkzonesForSektor, getKorlapsForWorkzone
-}) => {
+// DEFINISIKAN SEMUA KOLOM YANG DIANGGAP SEBAGAI TTR
+const ttrColumns = new Set([
+  "ttr_customer",
+  "ttr_agent",
+  "ttr_mitra",
+  "ttr_nasional",
+  "ttr_end_to_end",
+]);
 
-  const handleDropdownChange = (key, value) => {
+export const WorkOrderRow = memo(
+  ({
+    item,
+    allKeys,
+    visibleKeys,
+    isSelected,
+    onSelect,
+    onUpdate,
+    updatingStatus,
+    onEdit,
+    onDelete,
+    onFormat,
+    onCopy,
+    onComplete,
+    allSektorOptions,
+    statusOptions,
+    getWorkzonesForSektor,
+    getKorlapsForWorkzone,
+  }) => {
+    const handleDropdownChange = (key, value) => {
+      const updatedFields = { [key]: value };
+      if (key === "sektor") {
+        updatedFields.workzone = null;
+        updatedFields.korlap = null;
+      } else if (key === "workzone") {
+        updatedFields.korlap = null;
+      }
+      onUpdate(item, updatedFields);
+    };
 
-    // Siapkan data perubahan
-    const updatedFields = { [key]: value };
+    const workzoneRowOptions = useMemo(
+      () => getWorkzonesForSektor(item.sektor),
+      [item.sektor, getWorkzonesForSektor]
+    );
 
-    // **LOGIKA KUNCI ADA DI SINI**
-    // Jika pengguna mengubah Sektor, kita harus mereset Workzone dan Korlap
-    // agar pengguna memilih ulang sesuai urutan.
-    if (key === "sektor") {
-      updatedFields.workzone = null; // Kosongkan workzone
-      updatedFields.korlap = null;   // Kosongkan korlap
-    }
-    // Jika pengguna mengubah Workzone, hanya Korlap yang direset.
-    else if (key === "workzone") {
-      updatedFields.korlap = null;   // Kosongkan korlap
-    }
-    console.log("1. [WorkOrderRow] Perubahan terdeteksi:", updatedFields);
+    const korlapRowOptions = useMemo(
+      () => getKorlapsForWorkzone(item.workzone),
+      [item.workzone, getKorlapsForWorkzone]
+    );
 
-
-    // Panggil fungsi onUpdate dengan data item asli dan field yang sudah diubah.
-    // Fungsi onUpdate di file index.jsx akan mengirim ini ke backend untuk disimpan.
-    onUpdate(item, updatedFields);
-  };
-
-  const workzoneRowOptions = useMemo(
-    () => getWorkzonesForSektor(item.sektor),
-    [item.sektor, getWorkzonesForSektor]
-  );
-
-  const korlapRowOptions = useMemo(
-    () => getKorlapsForWorkzone(item.workzone),
-    [item.workzone, getKorlapsForWorkzone]
-  );
-
-  // Bagian return JSX tidak perlu diubah sama sekali.
-  return (
-    <tr className={isSelected ? "selected" : ""}>
-      <td>
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={() => onSelect(item.incident)}
-        />
-      </td>
-      <td className="aksi-cell">
-          <ActionDropdown 
+    return (
+      <tr className={isSelected ? "selected" : ""}>
+        <td>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onSelect(item.incident)}
+          />
+        </td>
+        <td className="aksi-cell">
+          <ActionDropdown
             item={item}
             onFormat={onFormat}
             onCopy={onCopy}
             onEdit={onEdit}
             onDelete={onDelete}
             onComplete={onComplete}
-            
           />
         </td>
-      {allKeys
-        .filter((key) => visibleKeys.has(key))
-        .map((key) => {
-          const isUpdating = updatingStatus[item.incident];
-          if (key === "status") {
-            return (
-              <td key={key} className="interactive-cell">
-                <CustomDropdown
-                  options={statusOptions}
-                  value={item.status}
-                  onChange={(v) => handleDropdownChange("status", v)}
-                  disabled={isUpdating}
-                  placeholder="- Pilih Status -"
-                />
-                {isUpdating && "⏳"}
-              </td>
-            );
-          }
-          if (key === "sektor") {
-            return (
-              <td key={key} className="interactive-cell">
-                <CustomDropdown
-                  options={allSektorOptions}
-                  value={item.sektor}
-                  onChange={(v) => handleDropdownChange("sektor", v)}
-                  disabled={isUpdating}
-                  placeholder="- Pilih Sektor -"
-                />
-                {isUpdating && "⏳"}
-              </td>
-            );
-          }
-          if (key === "workzone") {
-            return (
-              <td key={key} className="interactive-cell">
-                <CustomDropdown
-                  options={workzoneRowOptions}
-                  value={item.workzone}
-                  onChange={(v) => handleDropdownChange("workzone", v)}
-                  disabled={!item.sektor || isUpdating}
-                  placeholder="- Pilih Workzone -"
-                />
-                {isUpdating && "⏳"}
-              </td>
-            );
-          }
-          if (key === "korlap") {
-            return (
-              <td key={key} className="interactive-cell">
-                <CustomDropdown
-                  options={korlapRowOptions}
-                  value={item.korlap}
-                  onChange={(v) => handleDropdownChange("korlap", v)}
-                  disabled={!item.workzone || isUpdating}
-                  placeholder="- Pilih Korlap -"
-                />
-                {isUpdating && "⏳"}
-              </td>
-            );
-          }
+        {allKeys
+          .filter((key) => visibleKeys.has(key))
+          .map((key) => {
+            const isUpdating = updatingStatus[item.incident];
 
-          // Pakai Formater untuk kolom tanggal
-          const cellValue = dateColumns.has(key)
-            ? formatReadableDate(item[key])
-            : String(item[key] ?? "");
-          return (
-            <td key={key} className="data-cell truncate" title={cellValue}>
-              {cellValue}
-            </td>
-          );
+            // LOGIKA UTAMA: JIKA KOLOM ADALAH KOLOM TTR, TAMPILKAN KALKULATOR
+            if (ttrColumns.has(key)) {
+              return (
+                <td key={key} className="data-cell">
+                  <TTRCalculator
+                    reportedDate={item.reported_date}
+                    resolvedDate={item.resolve_date}
+                  />
+                </td>
+              );
+            }
 
-          // Misal Gk pakai Formater 
-          // return (
-          //   <td key={key} className="data-cell truncate" title={item[key]}>
-          //     {String(item[key] ?? "")}
-          //   </td>
-          // );
+            // Kode di bawah ini adalah logika untuk kolom-kolom lain (tidak berubah)
+            if (key === "status") {
+              return (
+                <td key={key} className="interactive-cell">
+                  <CustomDropdown
+                    options={statusOptions}
+                    value={item.status}
+                    onChange={(v) => handleDropdownChange("status", v)}
+                    disabled={isUpdating}
+                    placeholder="- Pilih Status -"
+                  />
+                  {isUpdating && "⏳"}
+                </td>
+              );
+            }
+            if (key === "sektor") {
+              return (
+                <td key={key} className="interactive-cell">
+                  <CustomDropdown
+                    options={allSektorOptions}
+                    value={item.sektor}
+                    onChange={(v) => handleDropdownChange("sektor", v)}
+                    disabled={isUpdating}
+                    placeholder="- Pilih Sektor -"
+                  />
+                  {isUpdating && "⏳"}
+                </td>
+              );
+            }
+            if (key === "workzone") {
+              return (
+                <td key={key} className="interactive-cell">
+                  <CustomDropdown
+                    options={workzoneRowOptions}
+                    value={item.workzone}
+                    onChange={(v) => handleDropdownChange("workzone", v)}
+                    disabled={!item.sektor || isUpdating}
+                    placeholder="- Pilih Workzone -"
+                  />
+                  {isUpdating && "⏳"}
+                </td>
+              );
+            }
+            if (key === "korlap") {
+              return (
+                <td key={key} className="interactive-cell">
+                  <CustomDropdown
+                    options={korlapRowOptions}
+                    value={item.korlap}
+                    onChange={(v) => handleDropdownChange("korlap", v)}
+                    disabled={!item.workzone || isUpdating}
+                    placeholder="- Pilih Korlap -"
+                  />
+                  {isUpdating && "⏳"}
+                </td>
+              );
+            }
 
-        })}
-    </tr>
-  );
-});
+            const cellValue = dateColumns.has(key)
+              ? formatReadableDate(item[key])
+              : String(item[key] ?? "");
+            return (
+              <td key={key} className="data-cell truncate" title={cellValue}>
+                {cellValue}
+              </td>
+            );
+          })}
+      </tr>
+    );
+  }
+);
