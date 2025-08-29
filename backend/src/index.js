@@ -1,17 +1,26 @@
 import { Router, json } from 'itty-router';
-
-// Inisialisasi router baru
 const router = Router();
 
-/**
- * Rute dasar untuk mengecek apakah Worker berjalan dengan benar.
- * Mengembalikan pesan status dan versi.
- */
+// Fungsi helper untuk menambahkan header CORS
+const withCORS = (response) => {
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Ditambah 'Authorization' untuk nanti
+  return response;
+};
+router.options('*', () => new Response(null, {
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+}));
+
 router.get("/", () => {
   return json({
     status: 'ok',
     message: 'Backend API is running.',
-    version: '1.0.0',
+    version: '1.1.0-final', // Versi diperbarui
   });
 });
 
@@ -35,14 +44,14 @@ router.post("/save-addresses", async (request, env) => {
     // Menggunakan 'REPLACE INTO' sebagai pengganti 'ON DUPLICATE KEY UPDATE' di D1
     // Pastikan 'service_no' adalah PRIMARY KEY di tabel 'data_layanan'
     const query = "REPLACE INTO data_layanan (service_no, alamat) VALUES (?, ?);";
-    
+
     // Siapkan batch statements untuk efisiensi
     const stmts = data
       .filter(row => row.service_no) // Hanya proses baris yang memiliki service_no
       .map(row => env.DB.prepare(query).bind(row.service_no, row.alamat || null));
 
     if (stmts.length === 0) {
-        return json({ success: true, message: "Tidak ada data valid untuk diproses." });
+      return json({ success: true, message: "Tidak ada data valid untuk diproses." });
     }
 
     await env.DB.batch(stmts);
@@ -87,7 +96,7 @@ router.post("/sync-all", async (request, env) => {
     );
 
     const batchResult = await env.DB.batch(stmts);
-    
+
     // Hitung jumlah update yang berhasil
     const successfulUpdates = batchResult.filter(r => r.success && r.meta.changes > 0).length;
 
@@ -95,7 +104,7 @@ router.post("/sync-all", async (request, env) => {
       success: true,
       message: `Sinkronisasi selesai. ${successfulUpdates} alamat di work_orders berhasil diperbarui.`,
     });
-    
+
   } catch (err) {
     console.error("Gagal sinkronisasi alamat di D1:", err);
     return json({ success: false, error: "Terjadi kesalahan pada server saat sinkronisasi." }, { status: 500 });
@@ -476,5 +485,8 @@ router.all("*", () => new Response("404, Not Found.", { status: 404 }));
  * Export router untuk ditangani oleh Cloudflare Workers.
  */
 export default {
-  fetch: router.handle,
+  async fetch(request, env, ctx) {
+    const response = await router.handle(request, env, ctx);
+    return withCORS(response); // <-- Tambahkan header CORS ke semua response
+  }
 };
