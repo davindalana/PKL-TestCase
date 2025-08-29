@@ -68,12 +68,10 @@ router.post("/sync-to-mysql", async (req, res) => {
     });
   } catch (err) {
     console.error("Gagal sinkronisasi alamat di MySQL:", err);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Terjadi kesalahan pada server saat sinkronisasi.",
-      });
+    res.status(500).json({
+      success: false,
+      error: "Terjadi kesalahan pada server saat sinkronisasi.",
+    });
   } finally {
     if (conn) conn.release();
   }
@@ -97,12 +95,10 @@ router.post("/work-orders", async (req, res) => {
   const data = req.body;
 
   if (!Array.isArray(data) || data.length === 0) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Data harus berupa array dan tidak boleh kosong.",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Data harus berupa array dan tidak boleh kosong.",
+    });
   }
 
   const columns = [
@@ -215,12 +211,10 @@ router.post("/work-orders", async (req, res) => {
     }
 
     await conn.commit();
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: `${processedCount} baris work order berhasil diproses.`,
-      });
+    res.status(201).json({
+      success: true,
+      message: `${processedCount} baris work order berhasil diproses.`,
+    });
   } catch (err) {
     await conn.rollback();
     console.error("Gagal menyimpan work orders:", err);
@@ -264,12 +258,10 @@ router.post("/mypost", async (req, res) => {
   const data = req.body;
 
   if (!Array.isArray(data) || data.length === 0) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Data harus berupa array dan tidak boleh kosong.",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Data harus berupa array dan tidak boleh kosong.",
+    });
   }
 
   // Daftar kolom yang valid di tabel work_orders
@@ -454,16 +446,19 @@ router.get("/workzone-map", async (req, res) => {
       "SELECT sektor, workzone, korlap_username FROM workzone_details ORDER BY sektor, workzone"
     );
 
-    const workzoneGroups = rows.reduce((acc, { sektor, workzone, korlap_username }) => {
-      const key = `${sektor}|${workzone}`;
-      if (!acc[key]) {
-        acc[key] = { sektor, workzone, korlaps: [] };
-      }
-      if (korlap_username) {
-        acc[key].korlaps.push(korlap_username);
-      }
-      return acc;
-    }, {});
+    const workzoneGroups = rows.reduce(
+      (acc, { sektor, workzone, korlap_username }) => {
+        const key = `${sektor}|${workzone}`;
+        if (!acc[key]) {
+          acc[key] = { sektor, workzone, korlaps: [] };
+        }
+        if (korlap_username) {
+          acc[key].korlaps.push(korlap_username);
+        }
+        return acc;
+      },
+      {}
+    );
 
     res.json(Object.values(workzoneGroups));
   } catch (err) {
@@ -483,8 +478,12 @@ router.put("/work-orders/:incident", async (req, res) => {
 
     // **LANGKAH 1: IDENTIFIKASI KOLOM TANGGAL**
     const datetimeColumns = [
-      'reported_date', 'status_date', 'booking_date',
-      'resolve_date', 'date_modified', 'last_update_worklog'
+      "reported_date",
+      "status_date",
+      "booking_date",
+      "resolve_date",
+      "date_modified",
+      "last_update_worklog",
     ];
 
     // **LANGKAH 2: KONVERSI NILAI TANGGAL SEBELUM DISIMPAN**
@@ -493,23 +492,59 @@ router.put("/work-orders/:incident", async (req, res) => {
       if (datetimeColumns.includes(key) && data[key]) {
         try {
           // Ubah format 'YYYY-MM-DDTHH:mm:ss.sssZ' menjadi 'YYYY-MM-DD HH:mm:ss'
-          data[key] = new Date(data[key]).toISOString().slice(0, 19).replace('T', ' ');
+          data[key] = new Date(data[key])
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " ");
         } catch (e) {
           // Jika format tanggal tidak valid, jadikan null agar tidak error
-          console.error(`Format tanggal tidak valid untuk kolom ${key}:`, data[key]);
+          console.error(
+            `Format tanggal tidak valid untuk kolom ${key}:`,
+            data[key]
+          );
           data[key] = null;
         }
       }
     }
 
+    // ===== PENAMBAHAN LOGIKA TTR DI SINI =====
+    // Cek jika status diubah
+    if (data.status) {
+      const upperCaseStatus = data.status.toUpperCase();
+      // Jika tiket ditutup (CLOSED atau RESOLVED)
+      if (upperCaseStatus === "CLOSED" || upperCaseStatus === "RESOLVED") {
+        // Cek dulu apakah resolve_date sudah ada di database untuk mencegah penimpaan
+        const [existingWo] = await conn.query(
+          "SELECT resolve_date FROM work_orders WHERE incident = ?",
+          [incident]
+        );
+        if (!existingWo[0] || !existingWo[0].resolve_date) {
+          data.resolve_date = new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " "); // Set waktu sekarang
+        }
+      }
+      // Jika tiket dibuka kembali (statusnya bukan CLOSED/RESOLVED)
+      else {
+        data.resolve_date = null; // Kosongkan (set NULL) resolve_date
+      }
+    }
+    // ==========================================
+
     // 2. Lakukan proses UPDATE ke tabel work_orders
-    const keysToUpdate = Object.keys(data).filter(key => key !== 'incident');
+    const keysToUpdate = Object.keys(data).filter((key) => key !== "incident");
     if (keysToUpdate.length === 0) {
       await conn.rollback();
-      return res.status(400).json({ success: false, message: "Tidak ada data valid untuk diperbarui." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "Tidak ada data valid untuk diperbarui.",
+        });
     }
-    const valuesToUpdate = keysToUpdate.map(key => data[key]);
-    const setClauses = keysToUpdate.map(k => `\`${k}\` = ?`).join(', ');
+    const valuesToUpdate = keysToUpdate.map((key) => data[key]);
+    const setClauses = keysToUpdate.map((k) => `\`${k}\` = ?`).join(", ");
     const updateQuery = `UPDATE work_orders SET ${setClauses} WHERE incident = ?`;
     await conn.query(updateQuery, [...valuesToUpdate, incident]);
 
@@ -533,15 +568,19 @@ router.put("/work-orders/:incident", async (req, res) => {
     await conn.commit();
 
     if (updatedRows.length === 0) {
-      return res.status(404).json({ success: false, message: "Work order tidak ditemukan setelah update." });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Work order tidak ditemukan setelah update.",
+        });
     }
 
     res.json({
       success: true,
       message: `Work order berhasil diperbarui.`,
-      data: updatedRows[0]
+      data: updatedRows[0],
     });
-
   } catch (err) {
     await conn.rollback();
     console.error("Gagal mengedit work order:", err);
@@ -550,7 +589,6 @@ router.put("/work-orders/:incident", async (req, res) => {
     conn.release();
   }
 });
-
 
 // ENDPOINT BARU: Memindahkan WO ke Laporan
 // Metode: POST

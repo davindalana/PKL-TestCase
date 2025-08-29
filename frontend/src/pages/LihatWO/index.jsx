@@ -673,6 +673,9 @@ const LihatWO = () => {
                 />
               </th>
               <th>AKSI</th>
+              {/* ===== PENAMBAHAN HEADER TTR MANUAL DI SINI ===== */}
+              <th>TTR</th>
+              {/* ============================================== */}
               {allKeys
                 .filter((key) => visibleKeys.has(key))
                 .map((key) => (
@@ -690,7 +693,7 @@ const LihatWO = () => {
           <tbody>
             {dataToShow.length === 0 ? (
               <tr>
-                <td colSpan={visibleKeys.size + 2} className="no-data">
+                <td colSpan={visibleKeys.size + 3} className="no-data">
                   Tidak ada data yang cocok.
                 </td>
               </tr>
