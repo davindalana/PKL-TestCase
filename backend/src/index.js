@@ -1,13 +1,41 @@
 import { Router, json } from 'itty-router';
-const router = Router();
+// =================================================================================
+// 헬 HELPER FUNCTIONS (FUNGSI BANTUAN)
+// =================================================================================
 
-// Fungsi helper untuk menambahkan header CORS
+// Helper untuk membuat respons JSON yang konsisten
+const jsonResponse = (data, options = {}) => {
+  const defaultOptions = { status: 200 };
+  return json(data, { ...defaultOptions, ...options });
+};
+
+// Helper untuk menambahkan header CORS ke semua respons
 const withCORS = (response) => {
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Ditambah 'Authorization' untuk nanti
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return response;
 };
+
+// "Middleware" untuk memeriksa koneksi database di awal
+const withDB = (request, env) => {
+  if (!env.DB) {
+    console.error("Database binding 'DB' tidak ditemukan.");
+    return jsonResponse({
+      success: false,
+      error: "Database connection not configured."
+    }, { status: 500 });
+  }
+};
+
+
+// =================================================================================
+// 🗄️ ROUTER INITIALIZATION
+// =================================================================================
+
+const router = Router();
+
+// Menangani pre-flight request untuk CORS
 router.options('*', () => new Response(null, {
   headers: {
     'Access-Control-Allow-Origin': '*',
@@ -16,11 +44,20 @@ router.options('*', () => new Response(null, {
   }
 }));
 
+// Middleware untuk memeriksa DB di semua rute (kecuali rute dasar)
+router.all('*', withDB);
+
+
+// =================================================================================
+// 🏁 API ENDPOINTS
+// =================================================================================
+
+// Rute dasar untuk cek status API
 router.get("/", () => {
-  return json({
+  return jsonResponse({
     status: 'ok',
     message: 'Backend API is running.',
-    version: '1.1.3-final', // Versi diperbarui
+    version: '1.2.0-refactored',
   });
 });
 
@@ -179,7 +216,7 @@ router.post("/mypost", async (request, env) => {
 
       const validKeys = Object.keys(row).filter(key => columns.includes(key));
       const values = validKeys.map(key => row[key]);
-      
+
       const query = `REPLACE INTO work_orders (${validKeys.join(', ')}) VALUES (${validKeys.map(() => '?').join(', ')});`;
       workOrderStmts.push(env.DB.prepare(query).bind(...values));
       workOrderProcessed++;
@@ -188,10 +225,10 @@ router.post("/mypost", async (request, env) => {
     if (workOrderStmts.length > 0) {
       await env.DB.batch(workOrderStmts);
     }
-    
+
     // LANGKAH 2: Ambil alamat dari data_layanan dan sinkronkan ke work_orders
     const { results: addressesToSync } = await env.DB.prepare(
-  "SELECT service_no, alamat FROM data_layanan WHERE service_no IN (SELECT service_no FROM work_orders) AND alamat IS NOT NULL"
+      "SELECT service_no, alamat FROM data_layanan WHERE service_no IN (SELECT service_no FROM work_orders) AND alamat IS NOT NULL"
     ).all();
 
     if (addressesToSync && addressesToSync.length > 0) {
@@ -199,11 +236,11 @@ router.post("/mypost", async (request, env) => {
         env.DB.prepare("UPDATE work_orders SET alamat = ? WHERE service_no = ?")
           .bind(addr.alamat, addr.service_no)
       );
-      
+
       const batchResult = await env.DB.batch(syncStmts);
       totalUpdates = batchResult.filter(r => r.success && r.meta.changes > 0).length;
     }
-    
+
     // Memberikan respons yang lebih informatif
     return json({
       success: true,
@@ -262,44 +299,41 @@ router.get("/view-mysql", async (request, env) => {
  * URL: /work-orders
  */
 router.post("/work-orders", async (request, env) => {
-  if (!env.DB) {
-    return json({ success: false, error: "Database connection not configured." }, { status: 500 });
-  }
-
-  const data = await request.json();
-
-  if (!Array.isArray(data) || data.length === 0) {
-    return json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." }, { status: 400 });
-  }
-
-  // Daftar kolom yang valid (sesuaikan dengan skema tabel D1 Anda)
-  const columns = ["incident", "ticket_id_gamas", "external_ticket_id", "customer_id", "customer_name", "service_id", "service_no", "summary", "description_assignment", "reported_date", "reported_by", "reported_priority", "source_ticket", "channel", "contact_phone", "contact_name", "contact_email", "status", "status_date", "booking_date", "resolve_date", "date_modified", "last_update_worklog", "closed_by", "closed_reopen_by", "guarantee_status", "ttr_customer", "ttr_agent", "ttr_mitra", "ttr_nasional", "ttr_pending", "ttr_region", "ttr_witel", "ttr_end_to_end", "owner_group", "owner", "witel", "workzone", "region", "subsidiary", "territory_near_end", "territory_far_end", "customer_segment", "customer_type", "customer_category", "service_type", "slg", "technology", "lapul", "gaul", "onu_rx", "pending_reason", "incident_domain", "symptom", "hierarchy_path", "solution", "description_actual_solution", "kode_produk", "perangkat", "technician", "device_name", "sn_ont", "tipe_ont", "manufacture_ont", "impacted_site", "cause", "resolution", "worklog_summary", "classification_flag", "realm", "related_to_gamas", "tsc_result", "scc_result", "note", "notes_eskalasi", "rk_information", "external_ticket_tier_3", "classification_path", "urgency", "alamat", "korlap"];
-
   try {
-    // D1 mendukung 'batching' untuk performa yang lebih baik
-    const stmts = [];
-    for (const row of data) {
-      if (!row.incident) continue; // Kunci utama 'incident' wajib ada
-
-      const validKeys = Object.keys(row).filter(key => columns.includes(key));
-      const values = validKeys.map(key => row[key]);
-      const keysToUpdate = validKeys.filter(k => k !== 'incident');
-
-      // Karena D1 tidak punya ON DUPLICATE KEY UPDATE, kita REPLACE (DELETE + INSERT)
-      // Pastikan 'incident' adalah PRIMARY KEY di skema tabel Anda
-      const query = `REPLACE INTO work_orders (${validKeys.join(', ')}) VALUES (${validKeys.map(() => '?').join(', ')});`;
-      stmts.push(env.DB.prepare(query).bind(...values));
+    const data = await request.json();
+    if (!Array.isArray(data) || data.length === 0) {
+      return jsonResponse({ success: false, message: "Input data harus berupa array dan tidak boleh kosong." }, { status: 400 });
     }
+
+    const columns = ["incident", "ticket_id_gamas", "external_ticket_id", "customer_id", "customer_name", "service_id", "service_no", "summary", "description_assignment", "reported_date", "reported_by", "reported_priority", "source_ticket", "channel", "contact_phone", "contact_name", "contact_email", "status", "status_date", "booking_date", "resolve_date", "date_modified", "last_update_worklog", "closed_by", "closed_reopen_by", "guarantee_status", "ttr_customer", "ttr_agent", "ttr_mitra", "ttr_nasional", "ttr_pending", "ttr_region", "ttr_witel", "ttr_end_to_end", "owner_group", "owner", "witel", "workzone", "region", "subsidiary", "territory_near_end", "territory_far_end", "customer_segment", "customer_type", "customer_category", "service_type", "slg", "technology", "lapul", "gaul", "onu_rx", "pending_reason", "incident_domain", "symptom", "hierarchy_path", "solution", "description_actual_solution", "kode_produk", "perangkat", "technician", "device_name", "sn_ont", "tipe_ont", "manufacture_ont", "impacted_site", "cause", "resolution", "worklog_summary", "classification_flag", "realm", "related_to_gamas", "tsc_result", "scc_result", "note", "notes_eskalasi", "rk_information", "external_ticket_tier_3", "classification_path", "urgency", "alamat", "korlap"];
+
+    const stmts = data
+      .filter(row => row.incident) // Wajib ada primary key
+      .map(row => {
+        // ✅ LOGIKA BACKEND: Jika reported_date tidak ada, buat baru.
+        if (!row.reported_date) {
+          row.reported_date = new Date().toISOString();
+        }
+        // Pastikan status awal adalah 'open' atau sejenisnya jika belum ada
+        if (!row.status) {
+          row.status = 'open';
+        }
+
+        const validKeys = Object.keys(row).filter(key => columns.includes(key));
+        const values = validKeys.map(key => row[key]);
+        const query = `REPLACE INTO work_orders (${validKeys.join(', ')}) VALUES (${'?'.repeat(validKeys.length).split('').join(',')});`;
+        return env.DB.prepare(query).bind(...values);
+      });
 
     if (stmts.length > 0) {
       await env.DB.batch(stmts);
     }
 
-    return json({ success: true, message: `${stmts.length} baris work order berhasil diproses.` }, { status: 201 });
+    return jsonResponse({ success: true, message: `${stmts.length} work order berhasil diproses.` }, { status: 201 });
 
   } catch (err) {
-    console.error("Gagal menyimpan work orders ke D1:", err);
-    return json({ success: false, error: "Gagal memproses data.", details: err.message }, { status: 500 });
+    console.error("Gagal menyimpan work orders:", err);
+    return jsonResponse({ success: false, error: "Gagal memproses data.", details: err.message }, { status: 500 });
   }
 });
 
@@ -330,58 +364,6 @@ router.delete("/work-orders/:incident", async (request, env) => {
     return json({ success: false, error: "Gagal menghapus data.", details: err.message }, { status: 500 });
   }
 });
-
-/**
- * ENDPOINT: Sinkronisasi data (contoh untuk /mypost)
- * Metode: POST
- * URL: /sync-address
- */
-// router.post("/mypost", async (request, env) => {
-//   if (!env.DB) {
-//     return json({ success: false, error: "Database connection not configured." }, { status: 500 });
-//   }
-
-//   const data = await request.json();
-//   if (!Array.isArray(data) || data.length === 0) {
-//     return json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." }, { status: 400 });
-//   }
-
-//   try {
-//     const serviceNosToSync = [...new Set(data.map(row => row.service_no).filter(Boolean))];
-//     if (serviceNosToSync.length === 0) {
-//       return json({ success: true, message: "Tidak ada service_no yang valid untuk disinkronkan." });
-//     }
-
-//     // 1. Ambil semua alamat dari 'data_layanan' dalam satu query
-//     const placeholders = serviceNosToSync.map(() => '?').join(',');
-//     const query = `SELECT service_no, alamat FROM data_layanan WHERE service_no IN (${placeholders})`;
-//     const { results: addresses } = await env.DB.prepare(query).bind(...serviceNosToSync).all();
-
-//     if (!addresses || addresses.length === 0) {
-//       return json({ success: true, message: "Tidak ada alamat yang cocok ditemukan di data_layanan." });
-//     }
-
-//     // 2. Buat batch UPDATE statement untuk 'work_orders'
-//     const stmts = addresses.map(addr =>
-//       env.DB.prepare("UPDATE work_orders SET alamat = ? WHERE service_no = ?")
-//         .bind(addr.alamat, addr.service_no)
-//     );
-
-//     const batchResult = await env.DB.batch(stmts);
-
-//     // Menghitung jumlah update yang berhasil
-//     const successfulUpdates = batchResult.filter(r => r.success).length;
-
-//     return json({
-//       success: true,
-//       message: `Sinkronisasi selesai. ${successfulUpdates} dari ${addresses.length} alamat berhasil diperbarui.`
-//     });
-
-//   } catch (err) {
-//     console.error("Gagal sinkronisasi alamat:", err);
-//     return json({ success: false, error: "Gagal sinkronisasi data.", details: err.message }, { status: 500 });
-//   }
-// });
 
 /**
  * ENDPOINT: Mengambil daftar workzone unik dari D1
@@ -491,37 +473,37 @@ router.put("/work-orders/:incident", async (request, env) => {
  * URL: /work-orders/:incident/complete
  */
 router.post("/work-orders/:incident/complete", async (request, env) => {
-  if (!env.DB) {
-    return json({ error: "Database not configured" }, { status: 500 });
-  }
-
   const { incident } = request.params;
-
   try {
     const { results } = await env.DB.prepare("SELECT * FROM work_orders WHERE incident = ?").bind(incident).all();
     if (results.length === 0) {
-      return json({ success: false, message: "Work order tidak ditemukan." }, { status: 404 });
+      return jsonResponse({ success: false, message: "Work order tidak ditemukan." }, { status: 404 });
     }
+    
     const workOrder = results[0];
 
+    // ✅ LOGIKA BACKEND: Atur status dan waktu selesai saat tiket ditutup.
+    workOrder.status = 'closed'; // Atau 'resolved', sesuaikan dengan sistem Anda
+    workOrder.resolve_date = new Date().toISOString();
+    workOrder.date_modified = new Date().toISOString();
+
     const columns = Object.keys(workOrder);
-    const placeholders = columns.map(() => '?').join(', ');
     const values = Object.values(workOrder);
 
-    // Gunakan batch untuk menjalankan INSERT dan DELETE
     const stmts = [
-      env.DB.prepare(`INSERT INTO reports (${columns.join(', ')}) VALUES (${placeholders})`).bind(...values),
+      env.DB.prepare(`REPLACE INTO reports (${columns.join(', ')}) VALUES (${'?'.repeat(columns.length).split('').join(',')})`).bind(...values),
       env.DB.prepare("DELETE FROM work_orders WHERE incident = ?").bind(incident)
     ];
-
     await env.DB.batch(stmts);
 
-    return json({ success: true, message: "Work order telah dipindahkan ke laporan." });
+    return jsonResponse({ success: true, message: "Work order telah dipindahkan ke laporan." });
+
   } catch (err) {
     console.error("Gagal menyelesaikan work order:", err);
-    return json({ success: false, error: err.message }, { status: 500 });
+    return jsonResponse({ success: false, error: err.message }, { status: 500 });
   }
 });
+
 
 
 /**
@@ -549,37 +531,36 @@ router.get("/reports", async (request, env) => {
  * URL: /reports/:incident/reopen
  */
 router.post("/reports/:incident/reopen", async (request, env) => {
-  if (!env.DB) {
-    return json({ error: "Database not configured" }, { status: 500 });
-  }
-
   const { incident } = request.params;
-
   try {
     const { results } = await env.DB.prepare("SELECT * FROM reports WHERE incident = ?").bind(incident).all();
     if (results.length === 0) {
-      return json({ success: false, message: "Laporan tidak ditemukan." }, { status: 404 });
+      return jsonResponse({ success: false, message: "Laporan tidak ditemukan." }, { status: 404 });
     }
     const reportData = results[0];
 
+    // ✅ LOGIKA BACKEND: Buka kembali tiket, ubah status & hapus waktu selesai.
+    reportData.status = 'reopened'; // Atau 'open'
+    reportData.resolve_date = null; // TTR akan berjalan lagi di frontend
+    reportData.date_modified = new Date().toISOString();
+
     const columns = Object.keys(reportData);
-    const placeholders = columns.map(() => '?').join(', ');
     const values = Object.values(reportData);
 
-    // Gunakan batch untuk REPLACE dan DELETE
     const stmts = [
-      env.DB.prepare(`REPLACE INTO work_orders (${columns.join(', ')}) VALUES (${placeholders})`).bind(...values),
+      env.DB.prepare(`REPLACE INTO work_orders (${columns.join(', ')}) VALUES (${'?'.repeat(columns.length).split('').join(',')})`).bind(...values),
       env.DB.prepare("DELETE FROM reports WHERE incident = ?").bind(incident)
     ];
-
     await env.DB.batch(stmts);
 
-    return json({ success: true, message: "Work order telah berhasil dikembalikan dari laporan." });
+    return jsonResponse({ success: true, message: "Work order telah dibuka kembali." });
+
   } catch (err) {
-    console.error("Gagal mengembalikan work order:", err);
-    return json({ success: false, error: err.message }, { status: 500 });
+    console.error("Gagal membuka kembali work order:", err);
+    return jsonResponse({ success: false, error: err.message }, { status: 500 });
   }
 });
+
 
 /**
  * Fallback untuk menangani semua rute lain yang tidak cocok.
