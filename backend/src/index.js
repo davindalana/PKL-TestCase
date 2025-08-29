@@ -20,7 +20,7 @@ router.get("/", () => {
   return json({
     status: 'ok',
     message: 'Backend API is running.',
-    version: '1.1.0-final', // Versi diperbarui
+    version: '1.1.3-final', // Versi diperbarui
   });
 });
 
@@ -151,6 +151,73 @@ router.post("/sync-all", async (request, env) => {
 });
 
 /**
+ * ENDPOINT: Menerima data Work Order dan menyinkronkan alamat.
+ * Metode: POST
+ * URL: /sync-work-orders
+ */
+router.post("/mypost", async (request, env) => {
+  if (!env.DB) {
+    return json({ success: false, error: "Database connection not configured." }, { status: 500 });
+  }
+
+  const data = await request.json();
+  if (!Array.isArray(data) || data.length === 0) {
+    return json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." }, { status: 400 });
+  }
+
+  // Daftar kolom yang valid (sesuaikan dengan skema tabel D1 Anda)
+  const columns = ["incident", "ticket_id_gamas", "external_ticket_id", "customer_id", "customer_name", "service_id", "service_no", "summary", "description_assignment", "reported_date", "reported_by", "reported_priority", "source_ticket", "channel", "contact_phone", "contact_name", "contact_email", "status", "status_date", "booking_date", "resolve_date", "date_modified", "last_update_worklog", "closed_by", "closed_reopen_by", "guarantee_status", "ttr_customer", "ttr_agent", "ttr_mitra", "ttr_nasional", "ttr_pending", "ttr_region", "ttr_witel", "ttr_end_to_end", "owner_group", "owner", "witel", "workzone", "region", "subsidiary", "territory_near_end", "territory_far_end", "customer_segment", "customer_type", "customer_category", "service_type", "slg", "technology", "lapul", "gaul", "onu_rx", "pending_reason", "incident_domain", "symptom", "hierarchy_path", "solution", "description_actual_solution", "kode_produk", "perangkat", "technician", "device_name", "sn_ont", "tipe_ont", "manufacture_ont", "impacted_site", "cause", "resolution", "worklog_summary", "classification_flag", "realm", "related_to_gamas", "tsc_result", "scc_result", "note", "notes_eskalasi", "rk_information", "external_ticket_tier_3", "classification_path", "urgency", "alamat", "korlap"];
+
+  let totalUpdates = 0;
+  let workOrderProcessed = 0;
+
+  try {
+    // LANGKAH 1: Proses dan simpan/perbarui data work orders yang diterima dari request
+    const workOrderStmts = [];
+    for (const row of data) {
+      if (!row.incident) continue;
+
+      const validKeys = Object.keys(row).filter(key => columns.includes(key));
+      const values = validKeys.map(key => row[key]);
+      
+      const query = `REPLACE INTO work_orders (${validKeys.join(', ')}) VALUES (${validKeys.map(() => '?').join(', ')});`;
+      workOrderStmts.push(env.DB.prepare(query).bind(...values));
+      workOrderProcessed++;
+    }
+
+    if (workOrderStmts.length > 0) {
+      await env.DB.batch(workOrderStmts);
+    }
+    
+    // LANGKAH 2: Ambil alamat dari data_layanan dan sinkronkan ke work_orders
+    const { results: addressesToSync } = await env.DB.prepare(
+  "SELECT service_no, alamat FROM data_layanan WHERE service_no IN (SELECT service_no FROM work_orders) AND alamat IS NOT NULL"
+    ).all();
+
+    if (addressesToSync && addressesToSync.length > 0) {
+      const syncStmts = addressesToSync.map(addr =>
+        env.DB.prepare("UPDATE work_orders SET alamat = ? WHERE service_no = ?")
+          .bind(addr.alamat, addr.service_no)
+      );
+      
+      const batchResult = await env.DB.batch(syncStmts);
+      totalUpdates = batchResult.filter(r => r.success && r.meta.changes > 0).length;
+    }
+    
+    // Memberikan respons yang lebih informatif
+    return json({
+      success: true,
+      message: `Proses sinkronisasi selesai. ${workOrderProcessed} work order diproses. ${totalUpdates} alamat berhasil diperbarui.`,
+    }, { status: 201 });
+
+  } catch (err) {
+    console.error("Gagal memproses data dan sinkronisasi:", err);
+    return json({ success: false, error: "Gagal memproses data.", details: err.message }, { status: 500 });
+  }
+});
+
+
+/**
  * ENDPOINT: Melihat semua data Work Order dari database D1.
  * Metode: GET
  * URL: /work-orders
@@ -269,52 +336,52 @@ router.delete("/work-orders/:incident", async (request, env) => {
  * Metode: POST
  * URL: /sync-address
  */
-router.post("/mypost", async (request, env) => {
-  if (!env.DB) {
-    return json({ success: false, error: "Database connection not configured." }, { status: 500 });
-  }
+// router.post("/mypost", async (request, env) => {
+//   if (!env.DB) {
+//     return json({ success: false, error: "Database connection not configured." }, { status: 500 });
+//   }
 
-  const data = await request.json();
-  if (!Array.isArray(data) || data.length === 0) {
-    return json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." }, { status: 400 });
-  }
+//   const data = await request.json();
+//   if (!Array.isArray(data) || data.length === 0) {
+//     return json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." }, { status: 400 });
+//   }
 
-  try {
-    const serviceNosToSync = [...new Set(data.map(row => row.service_no).filter(Boolean))];
-    if (serviceNosToSync.length === 0) {
-      return json({ success: true, message: "Tidak ada service_no yang valid untuk disinkronkan." });
-    }
+//   try {
+//     const serviceNosToSync = [...new Set(data.map(row => row.service_no).filter(Boolean))];
+//     if (serviceNosToSync.length === 0) {
+//       return json({ success: true, message: "Tidak ada service_no yang valid untuk disinkronkan." });
+//     }
 
-    // 1. Ambil semua alamat dari 'data_layanan' dalam satu query
-    const placeholders = serviceNosToSync.map(() => '?').join(',');
-    const query = `SELECT service_no, alamat FROM data_layanan WHERE service_no IN (${placeholders})`;
-    const { results: addresses } = await env.DB.prepare(query).bind(...serviceNosToSync).all();
+//     // 1. Ambil semua alamat dari 'data_layanan' dalam satu query
+//     const placeholders = serviceNosToSync.map(() => '?').join(',');
+//     const query = `SELECT service_no, alamat FROM data_layanan WHERE service_no IN (${placeholders})`;
+//     const { results: addresses } = await env.DB.prepare(query).bind(...serviceNosToSync).all();
 
-    if (!addresses || addresses.length === 0) {
-      return json({ success: true, message: "Tidak ada alamat yang cocok ditemukan di data_layanan." });
-    }
+//     if (!addresses || addresses.length === 0) {
+//       return json({ success: true, message: "Tidak ada alamat yang cocok ditemukan di data_layanan." });
+//     }
 
-    // 2. Buat batch UPDATE statement untuk 'work_orders'
-    const stmts = addresses.map(addr =>
-      env.DB.prepare("UPDATE work_orders SET alamat = ? WHERE service_no = ?")
-        .bind(addr.alamat, addr.service_no)
-    );
+//     // 2. Buat batch UPDATE statement untuk 'work_orders'
+//     const stmts = addresses.map(addr =>
+//       env.DB.prepare("UPDATE work_orders SET alamat = ? WHERE service_no = ?")
+//         .bind(addr.alamat, addr.service_no)
+//     );
 
-    const batchResult = await env.DB.batch(stmts);
+//     const batchResult = await env.DB.batch(stmts);
 
-    // Menghitung jumlah update yang berhasil
-    const successfulUpdates = batchResult.filter(r => r.success).length;
+//     // Menghitung jumlah update yang berhasil
+//     const successfulUpdates = batchResult.filter(r => r.success).length;
 
-    return json({
-      success: true,
-      message: `Sinkronisasi selesai. ${successfulUpdates} dari ${addresses.length} alamat berhasil diperbarui.`
-    });
+//     return json({
+//       success: true,
+//       message: `Sinkronisasi selesai. ${successfulUpdates} dari ${addresses.length} alamat berhasil diperbarui.`
+//     });
 
-  } catch (err) {
-    console.error("Gagal sinkronisasi alamat:", err);
-    return json({ success: false, error: "Gagal sinkronisasi data.", details: err.message }, { status: 500 });
-  }
-});
+//   } catch (err) {
+//     console.error("Gagal sinkronisasi alamat:", err);
+//     return json({ success: false, error: "Gagal sinkronisasi data.", details: err.message }, { status: 500 });
+//   }
+// });
 
 /**
  * ENDPOINT: Mengambil daftar workzone unik dari D1
