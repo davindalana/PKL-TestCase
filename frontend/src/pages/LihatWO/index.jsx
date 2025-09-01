@@ -96,11 +96,9 @@ const ALL_POSSIBLE_KEYS = [
 ];
 
 const ALL_STATUS_OPTIONS = [
-  "IN PROGRESS",
-  "PENDING",
-  "RESOLVED",
-  "CLOSED",
   "OPEN",
+  "BACKEND",
+  "CLOSED",
 ];
 
 const LihatWO = () => {
