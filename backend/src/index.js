@@ -483,7 +483,7 @@ router.post("/work-orders/:incident/complete", async (request, env) => {
     const workOrder = results[0];
 
     // ✅ LOGIKA BACKEND: Atur status dan waktu selesai saat tiket ditutup.
-    workOrder.status = 'closed'; // Atau 'resolved', sesuaikan dengan sistem Anda
+    workOrder.status = 'CLOSED'; // Atau 'resolved', sesuaikan dengan sistem Anda
     workOrder.resolve_date = new Date().toISOString();
     workOrder.date_modified = new Date().toISOString();
 
@@ -540,7 +540,7 @@ router.post("/reports/:incident/reopen", async (request, env) => {
     const reportData = results[0];
 
     // ✅ LOGIKA BACKEND: Buka kembali tiket, ubah status & hapus waktu selesai.
-    reportData.status = 'reopened'; // Atau 'open'
+    reportData.status = 'OPEN'; // Atau 'open'
     reportData.resolve_date = null; // TTR akan berjalan lagi di frontend
     reportData.date_modified = new Date().toISOString();
 
