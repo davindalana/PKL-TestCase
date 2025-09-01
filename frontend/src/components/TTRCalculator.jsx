@@ -2,22 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 
-// Fungsi untuk menghitung selisih waktu, mirip dengan fungsi PHP Anda
-const calculateDuration = (start, end) => {
-  // Jika tidak ada tanggal mulai, kembalikan strip
+// Fungsi helper untuk mem-parsing tanggal (tetap berguna)
+const parseDate = (dateString) => {
+  if (!dateString) return null;
+  if (typeof dateString === "string" && dateString.includes(" ")) {
+    const formattedDate = dateString.replace(" ", "T");
+    return new Date(formattedDate);
+  }
+  return new Date(dateString);
+};
+
+// Fungsi kalkulasi real-time HANYA untuk tiket yang sedang berjalan
+const calculateLiveDuration = (start) => {
   if (!start) return "-";
+  const startDate = parseDate(start);
+  const endDate = new Date(); // Waktu saat ini
 
-  const startDate = new Date(start);
-  // Jika tidak ada tanggal selesai (tiket masih open), gunakan waktu saat ini
-  const endDate = end ? new Date(end) : new Date();
-
-  // Jika tanggal mulai tidak valid
   if (isNaN(startDate.getTime())) return "-";
 
   let diff = endDate.getTime() - startDate.getTime();
-  if (diff < 0) diff = 0; // Pastikan selisih tidak negatif
+  if (diff < 0) diff = 0;
 
-  // Konversi selisih milidetik ke hari, jam, dan menit
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   diff -= days * (1000 * 60 * 60 * 24);
   const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -27,35 +32,39 @@ const calculateDuration = (start, end) => {
   let result = "";
   if (days > 0) result += `${days}H `;
   if (hours > 0) result += `${hours}J `;
-  // Selalu tampilkan menit, bahkan jika 0
   if (minutes >= 0) result += `${minutes}M`;
 
-  // Jika tidak ada hasil (misal, selisih < 1 menit), tampilkan "0M"
   return result.trim() === "" ? "0M" : result.trim();
 };
 
-const TTRCalculator = ({ reportedDate, resolvedDate }) => {
-  // Hitung durasi awal saat komponen pertama kali render
-  const [duration, setDuration] = useState(
-    calculateDuration(reportedDate, resolvedDate)
+const TTRCalculator = ({ reportedDate, ttrValue }) => {
+  // State untuk menyimpan durasi live
+  const [liveDuration, setLiveDuration] = useState(
+    calculateLiveDuration(reportedDate)
   );
 
   useEffect(() => {
-    // Jika tiket belum selesai (tidak ada resolvedDate), kita perlu update durasi secara berkala
-    if (reportedDate && !resolvedDate) {
-      // Set interval untuk mengkalkulasi ulang setiap 1 menit (60000 ms)
-      const interval = setInterval(() => {
-        setDuration(calculateDuration(reportedDate, null));
-      }, 60000);
+    let intervalId = null;
 
-      // Fungsi cleanup: hapus interval saat komponen di-unmount (pindah halaman, etc)
-      return () => clearInterval(interval);
+    // Jika TIDAK ada ttrValue (artinya tiket masih open), jalankan timer
+    if (reportedDate && !ttrValue) {
+      intervalId = setInterval(() => {
+        setLiveDuration(calculateLiveDuration(reportedDate));
+      }, 60000); // Update setiap menit
     }
-    // Jika tiket sudah selesai, cukup hitung sekali dan tidak perlu update
-    setDuration(calculateDuration(reportedDate, resolvedDate));
-  }, [reportedDate, resolvedDate]);
 
-  return <span>{duration}</span>;
+    // Fungsi cleanup untuk membersihkan interval
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [reportedDate, ttrValue]); // Efek dievaluasi ulang jika props berubah
+
+  // Logika render:
+  // Jika ada ttrValue dari backend, tampilkan itu.
+  // Jika tidak, tampilkan liveDuration yang dihitung secara real-time.
+  return <span>{ttrValue || liveDuration}</span>;
 };
 
 export default TTRCalculator;

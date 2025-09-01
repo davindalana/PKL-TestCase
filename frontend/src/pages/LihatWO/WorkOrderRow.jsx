@@ -4,7 +4,7 @@ import React, { memo, useMemo } from "react";
 import CustomDropdown from "../../components/CustomDropdown";
 import ActionDropdown from "../../components/ActionDropdown";
 import { formatReadableDate } from "../../utils/dateFormatter";
-import TTRCalculator from "../../components/TTRCalculator"; // <-- PASTIKAN PATH INI BENAR
+import TTRCalculator from "../../components/TTRCalculator";
 
 const dateColumns = new Set([
   "reported_date",
@@ -15,7 +15,6 @@ const dateColumns = new Set([
   "last_update_worklog",
 ]);
 
-// DEFINISIKAN SEMUA KOLOM YANG DIANGGAP SEBAGAI TTR
 const ttrColumns = new Set([
   "ttr_customer",
   "ttr_agent",
@@ -88,19 +87,19 @@ export const WorkOrderRow = memo(
           .map((key) => {
             const isUpdating = updatingStatus[item.incident];
 
-            // LOGIKA UTAMA: JIKA KOLOM ADALAH KOLOM TTR, TAMPILKAN KALKULATOR
+            // --- PERUBAHAN DI SINI ---
             if (ttrColumns.has(key)) {
               return (
                 <td key={key} className="data-cell">
                   <TTRCalculator
                     reportedDate={item.reported_date}
-                    resolvedDate={item.resolve_date}
+                    ttrValue={item[key]} // Kirim nilai TTR dari database
                   />
                 </td>
               );
             }
+            // --- AKHIR PERUBAHAN ---
 
-            // Kode di bawah ini adalah logika untuk kolom-kolom lain (tidak berubah)
             if (key === "status") {
               return (
                 <td key={key} className="interactive-cell">
