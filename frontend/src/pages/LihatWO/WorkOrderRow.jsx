@@ -37,27 +37,23 @@ export const WorkOrderRow = memo(
     onFormat,
     onCopy,
     onComplete,
-    allSektorOptions,
     statusOptions,
-    getWorkzonesForSektor,
+    allWorkzoneOptions, // Prop baru untuk semua pilihan workzone
     getKorlapsForWorkzone,
   }) => {
+    // Logika update disederhanakan. Komponen induk akan menangani logika bisnis.
     const handleDropdownChange = (key, value) => {
       const updatedFields = { [key]: value };
-      if (key === "sektor") {
-        updatedFields.workzone = null;
-        updatedFields.korlap = null;
-      } else if (key === "workzone") {
+
+      // Saat workzone berubah, kosongkan korlap untuk pemilihan ulang.
+      // Komponen induk akan menambahkan 'sektor' secara otomatis.
+      if (key === "workzone") {
         updatedFields.korlap = null;
       }
       onUpdate(item, updatedFields);
     };
 
-    const workzoneRowOptions = useMemo(
-      () => getWorkzonesForSektor(item.sektor),
-      [item.sektor, getWorkzonesForSektor]
-    );
-
+    // Memo-isasi untuk pilihan korlap tetap digunakan, ini sudah benar.
     const korlapRowOptions = useMemo(
       () => getKorlapsForWorkzone(item.workzone),
       [item.workzone, getKorlapsForWorkzone]
@@ -87,18 +83,16 @@ export const WorkOrderRow = memo(
           .map((key) => {
             const isUpdating = updatingStatus[item.incident];
 
-            // --- PERUBAHAN DI SINI ---
             if (ttrColumns.has(key)) {
               return (
                 <td key={key} className="data-cell">
                   <TTRCalculator
                     reportedDate={item.reported_date}
-                    ttrValue={item[key]} // Kirim nilai TTR dari database
+                    ttrValue={item[key]}
                   />
                 </td>
               );
             }
-            // --- AKHIR PERUBAHAN ---
 
             if (key === "status") {
               return (
@@ -114,34 +108,34 @@ export const WorkOrderRow = memo(
                 </td>
               );
             }
+
+            // 'Sektor' sekarang hanya menampilkan teks, tidak bisa diubah langsung.
             if (key === "sektor") {
+              const cellValue = String(item[key] ?? "");
               return (
-                <td key={key} className="interactive-cell">
-                  <CustomDropdown
-                    options={allSektorOptions}
-                    value={item.sektor}
-                    onChange={(v) => handleDropdownChange("sektor", v)}
-                    disabled={isUpdating}
-                    placeholder="- Pilih Sektor -"
-                  />
-                  {isUpdating && "⏳"}
+                <td key={key} className="data-cell" title={cellValue}>
+                  {cellValue}
                 </td>
               );
             }
+
+            // 'Workzone' menjadi dropdown utama yang memicu perubahan.
             if (key === "workzone") {
               return (
                 <td key={key} className="interactive-cell">
                   <CustomDropdown
-                    options={workzoneRowOptions}
+                    options={allWorkzoneOptions} // Menggunakan semua pilihan workzone
                     value={item.workzone}
                     onChange={(v) => handleDropdownChange("workzone", v)}
-                    disabled={!item.sektor || isUpdating}
+                    disabled={isUpdating} // Tidak lagi bergantung pada sektor
                     placeholder="- Pilih Workzone -"
                   />
                   {isUpdating && "⏳"}
                 </td>
               );
             }
+
+            // 'Korlap' akan ter-filter berdasarkan 'Workzone'.
             if (key === "korlap") {
               return (
                 <td key={key} className="interactive-cell">

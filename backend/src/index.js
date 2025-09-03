@@ -343,25 +343,49 @@ router.post("/work-orders", async (request, env) => {
  * URL: /work-orders/:incident
  */
 router.delete("/work-orders/:incident", async (request, env) => {
+  // 1. Validasi Koneksi Database (Sudah bagus)
   if (!env.DB) {
-    return json({ success: false, error: "Database connection not configured." }, { status: 500 });
+    console.error("Koneksi D1 Database tidak terkonfigurasi di env.");
+    return json({ success: false, error: "Konfigurasi server bermasalah." }, { status: 500 });
   }
 
   const { incident } = request.params;
 
-  try {
-    const stmt = env.DB.prepare("DELETE FROM work_orders WHERE incident = ?").bind(incident);
-    const { success, meta } = await stmt.run();
+  // 2. [PENYEMPURNAAN] Validasi Input dari Client
+  // Pastikan parameter 'incident' tidak kosong atau tidak valid.
+  if (!incident || incident.trim() === '') {
+    return json({ success: false, error: "Parameter 'incident' tidak boleh kosong." }, { status: 400 }); // 400 Bad Request
+  }
 
-    // meta.changes akan berisi jumlah baris yang terpengaruh
-    if (!success || meta.changes === 0) {
-      return json({ success: false, message: `Work order dengan incident ${incident} tidak ditemukan.` }, { status: 404 });
+  try {
+    // 3. Eksekusi Query dengan Prepared Statement (Sudah bagus)
+    const stmt = env.DB.prepare("DELETE FROM work_orders WHERE incident = ?").bind(incident);
+    const { meta } = await stmt.run();
+
+    // 4. [PENYEMPURNAAN] Cek Hasil Operasi
+    // D1 `.run()` akan melempar error jika query gagal, jadi kita hanya perlu cek
+    // jumlah baris yang berubah (meta.changes). Jika 0, berarti data tidak ditemukan.
+    if (meta.changes === 0) {
+      return json(
+        { success: false, message: `Work order dengan incident '${incident}' tidak ditemukan.` },
+        { status: 404 } // 404 Not Found
+      );
     }
 
-    return json({ success: true, message: `Work order dengan incident ${incident} berhasil dihapus.` });
+    // Jika berhasil (meta.changes > 0)
+    return json({
+      success: true,
+      message: `Work order dengan incident '${incident}' berhasil dihapus.`,
+      changes: meta.changes
+    });
+
   } catch (err) {
-    console.error("Gagal menghapus work order dari D1:", err);
-    return json({ success: false, error: "Gagal menghapus data.", details: err.message }, { status: 500 });
+    // 5. Penanganan Error Internal (Sudah bagus)
+    console.error(`Gagal menghapus work order '${incident}':`, err);
+    return json(
+        { success: false, error: "Terjadi kesalahan internal pada server." },
+        { status: 500 } // 500 Internal Server Error
+    );
   }
 });
 
