@@ -253,6 +253,48 @@ router.post("/mypost", async (request, env) => {
   }
 });
 
+/**
+ * ENDPOINT: Menghapus SEMUA Work Order dari D1
+ * Metode: DELETE
+ * URL: /work-orders/all
+ * PERINGATAN: Operasi ini sangat destruktif.
+ */
+router.delete("/work-orders/all", async (request, env) => {
+  // 1. [PENTING] Pemeriksaan Keamanan / Otorisasi
+  // Hanya izinkan request yang memiliki kunci API rahasia.
+  // Kunci ini harus disimpan di environment variables (env.SECRET_KEY).
+  const apiKey = request.headers.get("X-API-KEY");
+  if (!apiKey || apiKey !== env.SECRET_KEY) {
+    return json({ success: false, error: "Akses ditolak." }, { status: 403 }); // 403 Forbidden
+  }
+
+  // 2. Validasi Koneksi Database
+  if (!env.DB) {
+    console.error("Koneksi D1 Database tidak terkonfigurasi di env.");
+    return json({ success: false, error: "Konfigurasi server bermasalah." }, { status: 500 });
+  }
+
+  try {
+    // 3. Eksekusi Query DELETE tanpa WHERE clause
+    const stmt = env.DB.prepare("DELETE FROM work_orders");
+    const { meta } = await stmt.run();
+
+    // 4. Kirim Respons Sukses
+    return json({
+      success: true,
+      message: `Semua data work order (${meta.changes} baris) berhasil dihapus.`,
+      deleted_rows: meta.changes
+    });
+
+  } catch (err) {
+    // 5. Penanganan Error Internal
+    console.error("Gagal menghapus semua work order:", err);
+    return json(
+        { success: false, error: "Terjadi kesalahan internal pada server." },
+        { status: 500 }
+    );
+  }
+});
 
 /**
  * ENDPOINT: Melihat semua data Work Order dari database D1.
