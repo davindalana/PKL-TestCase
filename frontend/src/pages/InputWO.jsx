@@ -99,16 +99,53 @@ const InputWO = () => {
 
   const parseTSV = (tsv, map) => {
     const lines = tsv.trim().split(/\r?\n/);
-    if (lines.length < 2) return [];
-    const headers = lines[0].split("\t"); // Biarkan header asli untuk diproses di processData
-    const dataArray = lines.slice(1).map((line) => {
+    // Jika input kosong atau hanya berisi spasi, kembalikan array kosong.
+    if (lines.length === 0 || (lines.length === 1 && lines[0].trim() === '')) return [];
+
+    let headers;
+    let dataLines;
+
+    // Logika untuk mendeteksi keberadaan header
+    const firstLineValues = lines[0].split("\t");
+    const normalizedFirstLine = normalizeHeaders(firstLineValues);
+    
+    // Heuristik: Anggap sebagai header jika setidaknya setengah dari kolom cocok dengan field yang diizinkan
+    // atau jika kolom pertama adalah 'aksi' (berdasarkan data contoh).
+    const matchingHeaders = normalizedFirstLine.filter(h => allowedFields.includes(h));
+    const isHeaderPresent = normalizedFirstLine[0] === 'aksi' || matchingHeaders.length >= firstLineValues.length / 2;
+
+    if (isHeaderPresent && lines.length > 1) {
+      // Header terdeteksi dan ada setidaknya satu baris data
+      headers = lines[0].split("\t"); 
+      dataLines = lines.slice(1);
+      console.log("Header terdeteksi, memproses data.");
+    } else {
+      // Tidak ada header yang terdeteksi, anggap semua baris adalah data
+      // dan gunakan urutan kolom default dari 'allowedFields'.
+      headers = allowedFields; 
+      dataLines = lines;
+      console.log("Header tidak terdeteksi, menggunakan urutan kolom default.");
+    }
+
+    // Jika tidak ada baris data setelah pemrosesan, hentikan.
+    if (dataLines.length === 0) {
+        setMessage("Tidak ada baris data untuk diimpor.");
+        return [];
+    }
+
+    // Ubah setiap baris data menjadi objek berdasarkan header
+    const dataArray = dataLines.map((line) => {
       const values = line.split("\t");
       const obj = {};
       headers.forEach((h, i) => {
-        obj[h.trim()] = values[i]; // Gunakan header asli
+        if (i < values.length) { // Pastikan tidak ada error jika baris data lebih pendek dari header
+          obj[h.trim()] = values[i];
+        }
       });
       return obj;
     });
+
+    // Proses lebih lanjut data yang sudah menjadi array of objects
     return processData(dataArray, map);
   };
 
