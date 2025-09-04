@@ -1,5 +1,3 @@
-// Lokasi: frontend/src/pages/LihatWO/index.jsx
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import "./LihatWO.css";
 import { useDebounce } from "../../hooks/useDebounce";
@@ -117,7 +115,7 @@ const LihatWO = () => {
       sektorOptions: allSektors,
       workzoneFilterOptions: availableWorkzones,
       korlapFilterOptions: availableKorlaps,
-      allWorkzoneOptions: allWorkzones, // Menyediakan semua workzone untuk dropdown di baris
+      allWorkzoneOptions: allWorkzones,
     };
   }, [woData, filter.sektor, filter.workzone, workzoneMap, getWorkzonesForSektor, getKorlapsForWorkzone]);
 
@@ -160,12 +158,10 @@ const LihatWO = () => {
     });
   }, []);
 
-  // --- LOGIKA UTAMA ADA DI SINI ---
   const handleUpdateRow = async (originalItem, updatedFields) => {
     const incidentId = originalItem.incident;
     let finalUpdatedFields = { ...updatedFields };
 
-    // Jika workzone diubah, secara otomatis tentukan sektornya.
     if ('workzone' in updatedFields) {
       const newWorkzone = updatedFields.workzone;
       const newSektor = getSektorForWorkzone(newWorkzone);
@@ -367,6 +363,7 @@ const LihatWO = () => {
                   statusOptions={statusOptions}
                   allWorkzoneOptions={allWorkzoneOptions}
                   getKorlapsForWorkzone={getKorlapsForWorkzone}
+                  sektorOptions={sektorOptions}
                 />
               ))
             )}
@@ -401,6 +398,7 @@ const LihatWO = () => {
           onClose={() => setEditItem(null)}
           onSave={handleEditSave}
           allSektorOptions={sektorOptions}
+          getSektorForWorkzone={getSektorForWorkzone}
           getWorkzonesForSektor={getWorkzonesForSektor}
           getKorlapsForWorkzone={getKorlapsForWorkzone}
         />

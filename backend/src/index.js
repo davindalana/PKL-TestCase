@@ -57,7 +57,7 @@ router.get("/", () => {
   return jsonResponse({
     status: 'ok',
     message: 'Backend API is running.',
-    version: '1.2.0-refactored',
+    version: '1.2.1',
   });
 });
 
@@ -188,9 +188,9 @@ router.post("/sync-all", async (request, env) => {
 });
 
 /**
- * ENDPOINT: Menerima data Work Order dan menyinkronkan alamat.
+ * ENDPOINT: Menerima data Work Order, mengisi Sektor secara otomatis, dan menyinkronkan alamat.
  * Metode: POST
- * URL: /sync-work-orders
+ * URL: /mypost
  */
 router.post("/mypost", async (request, env) => {
   if (!env.DB) {
@@ -202,17 +202,32 @@ router.post("/mypost", async (request, env) => {
     return json({ success: false, message: "Data harus berupa array dan tidak boleh kosong." }, { status: 400 });
   }
 
-  // Daftar kolom yang valid (sesuaikan dengan skema tabel D1 Anda)
-  const columns = ["incident", "ticket_id_gamas", "external_ticket_id", "customer_id", "customer_name", "service_id", "service_no", "summary", "description_assignment", "reported_date", "reported_by", "reported_priority", "source_ticket", "channel", "contact_phone", "contact_name", "contact_email", "status", "status_date", "booking_date", "resolve_date", "date_modified", "last_update_worklog", "closed_by", "closed_reopen_by", "guarantee_status", "ttr_customer", "ttr_agent", "ttr_mitra", "ttr_nasional", "ttr_pending", "ttr_region", "ttr_witel", "ttr_end_to_end", "owner_group", "owner", "witel", "workzone", "region", "subsidiary", "territory_near_end", "territory_far_end", "customer_segment", "customer_type", "customer_category", "service_type", "slg", "technology", "lapul", "gaul", "onu_rx", "pending_reason", "incident_domain", "symptom", "hierarchy_path", "solution", "description_actual_solution", "kode_produk", "perangkat", "technician", "device_name", "sn_ont", "tipe_ont", "manufacture_ont", "impacted_site", "cause", "resolution", "worklog_summary", "classification_flag", "realm", "related_to_gamas", "tsc_result", "scc_result", "note", "notes_eskalasi", "rk_information", "external_ticket_tier_3", "classification_path", "urgency", "alamat", "korlap"];
+  // Daftar kolom yang valid, dipastikan 'sektor' sudah termasuk.
+  const columns = ["incident", "ticket_id_gamas", "external_ticket_id", "customer_id", "customer_name", "service_id", "service_no", "summary", "description_assignment", "reported_date", "reported_by", "reported_priority", "source_ticket", "channel", "contact_phone", "contact_name", "contact_email", "status", "status_date", "booking_date", "resolve_date", "date_modified", "last_update_worklog", "closed_by", "closed_reopen_by", "guarantee_status", "ttr_customer", "ttr_agent", "ttr_mitra", "ttr_nasional", "ttr_pending", "ttr_region", "ttr_witel", "ttr_end_to_end", "owner_group", "owner", "witel", "workzone", "region", "subsidiary", "territory_near_end", "territory_far_end", "customer_segment", "customer_type", "customer_category", "service_type", "slg", "technology", "lapul", "gaul", "onu_rx", "pending_reason", "incident_domain", "symptom", "hierarchy_path", "solution", "description_actual_solution", "kode_produk", "perangkat", "technician", "device_name", "sn_ont", "tipe_ont", "manufacture_ont", "impacted_site", "cause", "resolution", "worklog_summary", "classification_flag", "realm", "related_to_gamas", "tsc_result", "scc_result", "note", "notes_eskalasi", "rk_information", "external_ticket_tier_3", "classification_path", "urgency", "alamat", "korlap", "sektor"];
 
-  let totalUpdates = 0;
+  let totalAddressUpdates = 0;
   let workOrderProcessed = 0;
 
   try {
-    // LANGKAH 1: Proses dan simpan/perbarui data work orders yang diterima dari request
+    // LANGKAH BARU: Ambil peta relasi Workzone ke Sektor dari database terlebih dahulu.
+    const { results: mapResults } = await env.DB.prepare(
+      "SELECT workzone, sektor FROM workzone_details WHERE workzone IS NOT NULL AND sektor IS NOT NULL"
+    ).all();
+    
+    const workzoneToSektorMap = mapResults.reduce((acc, { workzone, sektor }) => {
+      acc[workzone] = sektor;
+      return acc;
+    }, {});
+
+    // LANGKAH 1: Proses data yang masuk, perkaya dengan data sektor, lalu siapkan untuk disimpan.
     const workOrderStmts = [];
     for (const row of data) {
       if (!row.incident) continue;
+
+      // Logika Otomatisasi: Jika workzone ada, isi atau timpa kolom sektor.
+      if (row.workzone && workzoneToSektorMap[row.workzone]) {
+        row.sektor = workzoneToSektorMap[row.workzone];
+      }
 
       const validKeys = Object.keys(row).filter(key => columns.includes(key));
       const values = validKeys.map(key => row[key]);
@@ -226,9 +241,9 @@ router.post("/mypost", async (request, env) => {
       await env.DB.batch(workOrderStmts);
     }
 
-    // LANGKAH 2: Ambil alamat dari data_layanan dan sinkronkan ke work_orders
+    // LANGKAH 2: Ambil alamat dari data_layanan dan sinkronkan ke work_orders.
     const { results: addressesToSync } = await env.DB.prepare(
-      "SELECT service_no, alamat FROM data_layanan WHERE service_no IN (SELECT service_no FROM work_orders) AND alamat IS NOT NULL"
+      "SELECT service_no, alamat FROM data_layanan WHERE service_no IN (SELECT service_no FROM work_orders WHERE alamat IS NULL OR alamat = '') AND alamat IS NOT NULL"
     ).all();
 
     if (addressesToSync && addressesToSync.length > 0) {
@@ -238,13 +253,12 @@ router.post("/mypost", async (request, env) => {
       );
 
       const batchResult = await env.DB.batch(syncStmts);
-      totalUpdates = batchResult.filter(r => r.success && r.meta.changes > 0).length;
+      totalAddressUpdates = batchResult.reduce((sum, r) => sum + (r.success ? r.meta.changes : 0), 0);
     }
 
-    // Memberikan respons yang lebih informatif
     return json({
       success: true,
-      message: `Proses sinkronisasi selesai. ${workOrderProcessed} work order diproses. ${totalUpdates} alamat berhasil diperbarui.`,
+      message: `Proses selesai. ${workOrderProcessed} work order diproses. ${totalAddressUpdates} alamat berhasil diperbarui.`,
     }, { status: 201 });
 
   } catch (err) {
